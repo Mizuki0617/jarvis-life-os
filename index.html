@@ -1,0 +1,2710 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>J.A.R.V.I.S. — Personal Life OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #05080f;
+    --bg2: #090e1a;
+    --glass: rgba(255,255,255,0.035);
+    --glass-border: rgba(79,195,247,0.12);
+    --neon: #4fc3f7;
+    --neon2: #00e5ff;
+    --neon-green: #00e676;
+    --neon-purple: #b388ff;
+    --neon-orange: #ffab40;
+    --neon-red: #ff5252;
+    --text: #d8eeff;
+    --text-dim: rgba(180,220,255,0.45);
+    --sidebar-w: 195px;
+    --card-bg: rgba(10,18,36,0.7);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', 'Hiragino Sans', -apple-system, sans-serif;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  .num { font-family: 'Rajdhani', 'Orbitron', monospace; }
+  .eng { font-family: 'Rajdhani', monospace; letter-spacing: 1px; }
+
+  /* ─── BACKGROUND ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(79,195,247,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(79,195,247,0.025) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(79,195,247,0.04), transparent);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── LAYOUT ─── */
+  #app { display: flex; height: 100vh; position: relative; z-index: 1; }
+
+  /* ─── SIDEBAR ─── */
+  #sidebar {
+    width: var(--sidebar-w);
+    background: linear-gradient(180deg, rgba(8,14,26,0.98) 0%, rgba(5,8,15,0.99) 100%);
+    border-right: 1px solid rgba(79,195,247,0.1);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 22px 0;
+    backdrop-filter: blur(24px);
+  }
+
+  .sidebar-logo {
+    padding: 0 16px 22px;
+    border-bottom: 1px solid rgba(79,195,247,0.1);
+    margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  .logo-radar {
+    width: 40px; height: 40px;
+    position: relative; flex-shrink: 0;
+  }
+  .logo-radar svg { width: 40px; height: 40px; }
+
+  .logo-text { }
+  .logo-title { font-family: 'Orbitron', monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: var(--neon); line-height: 1; }
+  .logo-sub { font-family: 'Rajdhani', monospace; font-size: 8px; letter-spacing: 2.5px; color: var(--text-dim); margin-top: 3px; text-transform: uppercase; }
+
+  @keyframes ringPulse {
+    0%,100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 0.8; transform: scale(1.08); }
+  }
+
+  nav { padding: 4px 0; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    margin: 2px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 10px;
+    position: relative;
+  }
+
+  .nav-item:hover { background: rgba(79,195,247,0.07); color: var(--neon); }
+
+  .nav-item.active {
+    background: rgba(79,195,247,0.12);
+    color: var(--neon);
+    box-shadow: inset 0 0 0 1px rgba(79,195,247,0.2);
+  }
+
+  .nav-icon { width: 18px; height: 18px; opacity: 0.55; flex-shrink: 0; transition: opacity 0.2s; }
+  .nav-item.active .nav-icon, .nav-item:hover .nav-icon { opacity: 1; }
+  .nav-label { font-size: 12px; font-weight: 500; letter-spacing: 0.2px; }
+  .nav-sub { font-family: 'Rajdhani'; font-size: 8.5px; color: var(--text-dim); margin-top: 1px; letter-spacing: 1px; }
+
+  .sidebar-bottom {
+    margin-top: auto;
+    padding: 14px 10px;
+    border-top: 1px solid rgba(79,195,247,0.1);
+  }
+
+  .ai-status {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(79,195,247,0.05);
+    border: 1px solid rgba(79,195,247,0.12);
+    border-radius: 12px;
+    padding: 10px 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .ai-status:hover { background: rgba(79,195,247,0.09); border-color: rgba(79,195,247,0.25); }
+
+  .ai-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    position: relative; flex-shrink: 0;
+    overflow: hidden;
+    border: 1px solid rgba(79,195,247,0.35);
+  }
+  .ai-avatar svg { width: 36px; height: 36px; }
+
+  @keyframes aiBlink {
+    0%,100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  .ai-info { flex: 1; min-width: 0; }
+  .ai-name { font-family: 'Rajdhani'; font-size: 12px; font-weight: 600; color: var(--neon); letter-spacing: 1px; }
+  .ai-desc { font-size: 9px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+
+  /* ─── MAIN ─── */
+  #main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ─── TOPBAR ─── */
+  #topbar {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(11,17,32,0.8);
+    backdrop-filter: blur(20px);
+    flex-shrink: 0;
+  }
+
+  .topbar-left h1 { font-size: 17px; font-weight: 500; letter-spacing: 0.3px; color: var(--text); }
+  .topbar-left p { font-size: 10.5px; color: var(--text-dim); margin-top: 3px; font-family: 'Rajdhani'; letter-spacing: 0.5px; }
+
+  .topbar-right {
+    display: flex; align-items: center; gap: 16px;
+  }
+
+  .clock-box { text-align: right; }
+  .clock-date { font-family: 'Rajdhani'; font-size: 10.5px; color: var(--text-dim); letter-spacing: 1.5px; }
+  .clock-time { font-family: 'Orbitron', monospace; font-size: 24px; font-weight: 400; color: var(--neon); letter-spacing: 3px; font-variant-numeric: tabular-nums; text-shadow: 0 0 16px rgba(79,195,247,0.5); }
+
+  .sync-badge {
+    display: flex; align-items: center; gap: 6px;
+    background: rgba(0,230,118,0.1);
+    border: 1px solid rgba(0,230,118,0.3);
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-size: 10px;
+    color: var(--neon-green);
+  }
+
+  .sync-dot {
+    width: 6px; height: 6px;
+    background: var(--neon-green);
+    border-radius: 50%;
+    box-shadow: 0 0 6px var(--neon-green);
+    animation: syncPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes syncPulse {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .topbar-menu { cursor: pointer; display: flex; flex-direction: column; gap: 4px; }
+  .topbar-menu span { display: block; width: 20px; height: 2px; background: var(--text-dim); border-radius: 1px; }
+
+  /* ─── CONTENT ─── */
+  #content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(79,195,247,0.2) transparent;
+  }
+
+  #content::-webkit-scrollbar { width: 4px; }
+  #content::-webkit-scrollbar-track { background: transparent; }
+  #content::-webkit-scrollbar-thumb { background: rgba(79,195,247,0.2); border-radius: 2px; }
+
+  /* ─── PAGE ─── */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* ─── GRID ─── */
+  .grid { display: grid; gap: 16px; }
+  .grid-3 { grid-template-columns: 280px 1fr 1fr; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-5 { grid-template-columns: repeat(5, 1fr); }
+
+  /* ─── GLASS CARD ─── */
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 18px 20px;
+    backdrop-filter: blur(16px);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s, box-shadow 0.3s;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 15%; right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(79,195,247,0.35), transparent);
+  }
+
+  .card:hover { border-color: rgba(79,195,247,0.22); box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+
+  .card-title {
+    font-family: 'Rajdhani', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: rgba(180,220,255,0.55);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .card-title-dot {
+    width: 5px; height: 5px;
+    background: var(--neon);
+    border-radius: 50%;
+    box-shadow: 0 0 7px var(--neon);
+    flex-shrink: 0;
+  }
+
+  /* ─── LIFE SCORE CARD ─── */
+  .score-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 280px;
+  }
+
+  .score-ring-wrap {
+    position: relative;
+    width: 180px; height: 180px;
+    margin-bottom: 4px;
+  }
+
+  #scoreRing {
+    position: absolute;
+    inset: 0;
+    width: 180px; height: 180px;
+  }
+
+  .score-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .score-label { font-family: 'Rajdhani'; font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; }
+  .score-value {
+    font-family: 'Orbitron', monospace;
+    font-size: 54px;
+    font-weight: 400;
+    color: var(--neon);
+    line-height: 1;
+    text-shadow: 0 0 32px rgba(79,195,247,0.7), 0 0 8px rgba(79,195,247,0.4);
+    letter-spacing: -2px;
+  }
+
+  .score-max { font-family: 'Rajdhani'; font-size: 13px; color: var(--text-dim); letter-spacing: 1px; }
+
+  .score-delta {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Rajdhani'; font-size: 16px; font-weight: 600;
+    margin-top: 2px;
+    letter-spacing: 1px;
+  }
+
+  .delta-up { color: var(--neon-green); text-shadow: 0 0 8px rgba(0,230,118,0.5); }
+  .delta-down { color: var(--neon-red); text-shadow: 0 0 8px rgba(255,82,82,0.5); }
+
+  .score-week { font-family: 'Rajdhani'; font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; }
+
+  /* ─── RADAR CHART ─── */
+  .radar-card { min-height: 280px; display: flex; flex-direction: column; }
+  .radar-wrap { flex: 1; display: flex; align-items: center; justify-content: center; }
+
+  /* ─── TREND CHART ─── */
+  .trend-card { min-height: 280px; display: flex; flex-direction: column; }
+  .trend-tabs {
+    display: flex; gap: 4px; margin-bottom: 12px;
+  }
+  .tab-btn {
+    padding: 4px 12px;
+    font-size: 11px;
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .tab-btn.active {
+    background: rgba(79,195,247,0.15);
+    border-color: var(--neon);
+    color: var(--neon);
+  }
+  .trend-wrap { flex: 1; }
+
+  /* ─── DIMENSION CARDS ─── */
+  .dim-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 10px;
+  }
+
+  .dim-icon-wrap {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+  }
+  .dim-icon-wrap svg { width: 20px; height: 20px; }
+
+  .dim-name { font-size: 12px; font-weight: 600; text-align: center; letter-spacing: 0.2px; }
+  .dim-sub { font-family: 'Rajdhani'; font-size: 9px; color: var(--text-dim); letter-spacing: 1.5px; }
+
+  .dim-ring-wrap { position: relative; width: 76px; height: 76px; }
+  .dim-ring-wrap canvas { position: absolute; inset: 0; width: 76px; height: 76px; }
+  .dim-score-center {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+  }
+  .dim-score { font-family: 'Orbitron', monospace; font-size: 20px; font-weight: 400; }
+  .dim-score-max { font-family: 'Rajdhani'; font-size: 9px; color: var(--text-dim); letter-spacing: 1px; }
+
+  .dim-checks {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .dim-check {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10px; color: var(--text-dim);
+  }
+
+  .check-icon {
+    width: 13px; height: 13px;
+    border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 8px;
+  }
+
+  .check-ok { background: rgba(0,230,118,0.18); color: var(--neon-green); border: 1px solid rgba(0,230,118,0.3); }
+  .check-ng { background: rgba(255,82,82,0.12); color: var(--neon-red); border: 1px solid rgba(255,82,82,0.2); }
+
+  /* ─── ALERTS ─── */
+  .alert-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .alert-item:last-child { margin-bottom: 0; }
+  .alert-item:hover { transform: translateX(2px); }
+
+  .alert-red { background: rgba(255,82,82,0.08); border: 1px solid rgba(255,82,82,0.25); }
+  .alert-orange { background: rgba(255,171,64,0.08); border: 1px solid rgba(255,171,64,0.25); }
+  .alert-yellow { background: rgba(255,235,59,0.08); border: 1px solid rgba(255,235,59,0.25); }
+
+  .alert-icon { font-size: 18px; flex-shrink: 0; }
+  .alert-body { flex: 1; }
+  .alert-title { font-size: 12px; font-weight: 600; }
+  .alert-desc { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  .alert-arrow { color: var(--text-dim); font-size: 16px; }
+
+  /* ─── HIGHLIGHT ─── */
+  .highlight-card {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 10px; text-align: center;
+    min-height: 280px;
+    justify-content: center;
+    position: relative;
+  }
+
+  .hologram-wrap {
+    width: 160px; height: 210px;
+    position: relative;
+    display: flex; align-items: flex-end; justify-content: center;
+    overflow: visible;
+  }
+
+  /* Platform rings */
+  .platform {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 20px;
+  }
+  .platform-ring {
+    position: absolute;
+    border-radius: 50%;
+    left: 50%; bottom: 2px;
+    transform: translateX(-50%);
+    animation: platformPulse 3s ease-in-out infinite;
+  }
+  .platform-ring:nth-child(1) { width: 60px; height: 10px; border: 1.5px solid rgba(79,195,247,0.6); animation-delay: 0s; box-shadow: 0 0 8px rgba(79,195,247,0.3); }
+  .platform-ring:nth-child(2) { width: 95px; height: 15px; border: 1px solid rgba(79,195,247,0.3); animation-delay: 0.6s; }
+  .platform-ring:nth-child(3) { width: 140px; height: 22px; border: 1px solid rgba(79,195,247,0.12); animation-delay: 1.2s; }
+  .platform-fill {
+    position: absolute;
+    bottom: 2px; left: 50%;
+    transform: translateX(-50%);
+    width: 60px; height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse, rgba(79,195,247,0.35), rgba(79,195,247,0.1) 50%, transparent 80%);
+    animation: platformGlow 3s ease-in-out infinite;
+  }
+
+  @keyframes platformPulse {
+    0%,100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+  @keyframes platformGlow {
+    0%,100% { opacity: 0.5; transform: translateX(-50%) scaleX(1); }
+    50% { opacity: 1; transform: translateX(-50%) scaleX(1.15); }
+  }
+
+  /* Human body */
+  .human-hologram {
+    position: relative;
+    z-index: 2;
+    margin-bottom: 20px;
+    filter: drop-shadow(0 0 6px rgba(79,195,247,0.9)) drop-shadow(0 0 18px rgba(79,195,247,0.5)) drop-shadow(0 0 40px rgba(79,195,247,0.2));
+    animation: holoFlicker 6s ease-in-out infinite;
+  }
+  @keyframes holoFlicker {
+    0%,100% { opacity: 1; filter: drop-shadow(0 0 6px rgba(79,195,247,0.9)) drop-shadow(0 0 18px rgba(79,195,247,0.5)); }
+    92% { opacity: 1; }
+    93% { opacity: 0.7; filter: drop-shadow(0 0 3px rgba(79,195,247,0.5)); }
+    94% { opacity: 1; filter: drop-shadow(0 0 10px rgba(79,195,247,1)) drop-shadow(0 0 24px rgba(79,195,247,0.6)); }
+    95% { opacity: 0.8; }
+    96% { opacity: 1; }
+  }
+
+  /* Scan line */
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(79,195,247,0.8), transparent);
+    animation: scanMove 3s ease-in-out infinite;
+    z-index: 3;
+    top: 0;
+  }
+  @keyframes scanMove {
+    0% { top: 0; opacity: 1; }
+    80% { top: 100%; opacity: 0.5; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  .body-glow {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 40% 80% at 50% 40%, rgba(79,195,247,0.08), transparent);
+    z-index: 1;
+  }
+
+  .highlight-text { font-size: 11.5px; line-height: 1.75; color: var(--text-dim); }
+  .highlight-text strong { color: var(--neon); font-weight: 600; }
+
+  .highlight-btn {
+    font-family: 'Rajdhani'; font-size: 11px; letter-spacing: 2px;
+    color: var(--neon); background: rgba(79,195,247,0.08);
+    border: 1px solid rgba(79,195,247,0.25); border-radius: 6px;
+    padding: 5px 16px; cursor: pointer; transition: all 0.2s;
+    text-transform: uppercase;
+  }
+  .highlight-btn:hover { background: rgba(79,195,247,0.15); }
+
+  /* ─── SUGGESTIONS ─── */
+  .suggestions {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .suggestion-item {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 14px;
+    display: flex; align-items: flex-start; gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .suggestion-item:hover {
+    background: rgba(79,195,247,0.08);
+    border-color: rgba(79,195,247,0.3);
+    transform: translateY(-2px);
+  }
+
+  .sug-icon { font-size: 20px; flex-shrink: 0; }
+  .sug-body { flex: 1; }
+  .sug-title { font-size: 12px; font-weight: 600; }
+  .sug-desc { font-size: 10px; color: var(--text-dim); margin-top: 4px; line-height: 1.5; }
+
+  /* ─── INPUT PAGE ─── */
+  .input-section { margin-bottom: 24px; }
+  .section-header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 16px;
+  }
+  .section-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+  .section-desc { font-size: 11px; color: var(--text-dim); }
+
+  .check-group { margin-bottom: 16px; }
+  .check-group-label {
+    font-size: 11px; letter-spacing: 1px; color: var(--text-dim);
+    margin-bottom: 8px; text-transform: uppercase;
+  }
+
+  .check-options { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .check-option {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+    background: var(--glass);
+    user-select: none;
+  }
+
+  .check-option:hover { border-color: rgba(79,195,247,0.4); }
+
+  .check-option.selected {
+    background: rgba(79,195,247,0.15);
+    border-color: var(--neon);
+    color: var(--neon);
+  }
+
+  .check-option input[type="radio"],
+  .check-option input[type="checkbox"] {
+    display: none;
+  }
+
+  .check-box {
+    width: 14px; height: 14px;
+    border: 1.5px solid currentColor;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: all 0.2s;
+  }
+
+  .check-option.selected .check-box {
+    opacity: 1;
+    background: rgba(79,195,247,0.3);
+  }
+
+  .save-btn {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, rgba(79,195,247,0.2), rgba(0,229,255,0.1));
+    border: 1px solid var(--neon);
+    border-radius: 12px;
+    color: var(--neon);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .save-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(79,195,247,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .save-btn:hover::before { opacity: 1; }
+  .save-btn:hover { box-shadow: 0 0 20px rgba(79,195,247,0.3); }
+
+  /* ─── HISTORY PAGE ─── */
+  .history-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  .history-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+  }
+  .history-date { font-size: 11px; color: var(--text-dim); width: 80px; flex-shrink: 0; }
+  .history-bars { flex: 1; display: flex; gap: 6px; align-items: center; }
+  .history-bar-wrap { flex: 1; }
+  .history-bar-label { font-size: 9px; color: var(--text-dim); margin-bottom: 3px; }
+  .history-bar {
+    height: 4px; border-radius: 2px;
+    background: rgba(79,195,247,0.1);
+    overflow: hidden;
+  }
+  .history-bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+  .history-score { font-size: 20px; font-weight: 300; color: var(--neon); width: 50px; text-align: right; }
+
+  /* ─── AI COACH PAGE ─── */
+  .coach-chat {
+    display: flex; flex-direction: column; gap: 16px;
+    max-height: 60vh; overflow-y: auto;
+    padding: 16px 0;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(79,195,247,0.2) transparent;
+  }
+
+  .chat-bubble {
+    display: flex; gap: 10px; align-items: flex-start;
+    max-width: 80%;
+  }
+
+  .chat-bubble.ai { align-self: flex-start; }
+  .chat-bubble.user { align-self: flex-end; flex-direction: row-reverse; }
+
+  .bubble-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(79,195,247,0.5), rgba(0,229,255,0.1));
+    border: 1px solid rgba(79,195,247,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .bubble-text {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .chat-bubble.ai .bubble-text {
+    background: rgba(79,195,247,0.08);
+    border: 1px solid rgba(79,195,247,0.2);
+    border-radius: 2px 12px 12px 12px;
+    color: var(--text);
+  }
+
+  .chat-bubble.user .bubble-text {
+    background: rgba(0,229,255,0.12);
+    border: 1px solid rgba(0,229,255,0.3);
+    border-radius: 12px 2px 12px 12px;
+    color: var(--neon2);
+  }
+
+  .chat-input-area {
+    display: flex; gap: 10px; margin-top: 16px;
+    border-top: 1px solid var(--glass-border); padding-top: 16px;
+  }
+
+  .chat-input {
+    flex: 1;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .chat-input:focus { border-color: var(--neon); }
+  .chat-input::placeholder { color: var(--text-dim); }
+
+  .chat-send {
+    padding: 10px 20px;
+    background: linear-gradient(135deg, rgba(79,195,247,0.2), rgba(0,229,255,0.1));
+    border: 1px solid var(--neon);
+    border-radius: 10px;
+    color: var(--neon);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .chat-send:hover { box-shadow: 0 0 12px rgba(79,195,247,0.3); }
+  .chat-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .typing-indicator {
+    display: flex; gap: 4px; align-items: center;
+    padding: 10px 14px;
+    background: rgba(79,195,247,0.08);
+    border: 1px solid rgba(79,195,247,0.2);
+    border-radius: 2px 12px 12px 12px;
+  }
+  .typing-dot {
+    width: 6px; height: 6px;
+    background: var(--neon);
+    border-radius: 50%;
+    animation: typingBounce 1.2s ease-in-out infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce {
+    0%,60%,100% { transform: translateY(0); opacity:0.4; }
+    30% { transform: translateY(-6px); opacity:1; }
+  }
+
+  .api-error {
+    background: rgba(255,82,82,0.08);
+    border: 1px solid rgba(255,82,82,0.25);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--neon-red);
+    margin-top: 8px;
+  }
+
+  /* ─── GOALS PAGE ─── */
+  .goal-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    margin-bottom: 10px;
+  }
+
+  .goal-badge {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .goal-info { flex: 1; }
+  .goal-name { font-size: 13px; font-weight: 500; }
+  .goal-detail { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+  .goal-progress-bar { height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; margin-top: 8px; }
+  .goal-progress-fill { height: 100%; border-radius: 2px; transition: width 0.5s; }
+  .goal-pct { font-size: 14px; font-weight: 300; flex-shrink: 0; }
+
+  /* ─── SETTINGS PAGE ─── */
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-label { font-size: 13px; }
+  .setting-sub { font-size: 10px; color: var(--text-dim); margin-top: 3px; }
+  .toggle {
+    width: 40px; height: 22px;
+    background: rgba(79,195,247,0.15);
+    border: 1px solid var(--glass-border);
+    border-radius: 11px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.3s;
+  }
+  .toggle.on { background: rgba(79,195,247,0.4); border-color: var(--neon); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    background: var(--text-dim);
+    border-radius: 50%;
+    top: 2px; left: 2px;
+    transition: all 0.3s;
+  }
+  .toggle.on::after { left: 20px; background: var(--neon); box-shadow: 0 0 6px var(--neon); }
+
+  /* ─── SCROLLBAR ─── */
+  .coach-chat::-webkit-scrollbar { width: 3px; }
+  .coach-chat::-webkit-scrollbar-thumb { background: rgba(79,195,247,0.2); border-radius: 2px; }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .page.active { animation: fadeIn 0.3s ease; }
+
+  /* ─── SECTION COLOR BADGES ─── */
+  .badge-health { background: rgba(0,230,118,0.15); color: var(--neon-green); border: 1px solid rgba(0,230,118,0.3); }
+  .badge-security { background: rgba(79,195,247,0.15); color: var(--neon); border: 1px solid rgba(79,195,247,0.3); }
+  .badge-relationship { background: rgba(179,136,255,0.15); color: var(--neon-purple); border: 1px solid rgba(179,136,255,0.3); }
+  .badge-achievement { background: rgba(255,171,64,0.15); color: var(--neon-orange); border: 1px solid rgba(255,171,64,0.3); }
+  .badge-growth { background: rgba(0,229,255,0.15); color: var(--neon2); border: 1px solid rgba(0,229,255,0.3); }
+
+  .color-health { color: var(--neon-green); }
+  .color-security { color: var(--neon); }
+  .color-relationship { color: var(--neon-purple); }
+  .color-achievement { color: var(--neon-orange); }
+  .color-growth { color: var(--neon2); }
+
+  /* ─── TOAST ─── */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: rgba(0,230,118,0.15);
+    border: 1px solid rgba(0,230,118,0.4);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 12px;
+    color: var(--neon-green);
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ─── SIDEBAR ─── -->
+  <div id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-radar">
+        <svg viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="rgba(79,195,247,0.35)" stroke-width="1"/>
+          <circle cx="20" cy="20" r="12" stroke="rgba(79,195,247,0.25)" stroke-width="1"/>
+          <circle cx="20" cy="20" r="6" stroke="rgba(79,195,247,0.4)" stroke-width="1"/>
+          <line x1="20" y1="2" x2="20" y2="38" stroke="rgba(79,195,247,0.15)" stroke-width="0.5"/>
+          <line x1="2" y1="20" x2="38" y2="20" stroke="rgba(79,195,247,0.15)" stroke-width="0.5"/>
+          <circle cx="20" cy="20" r="2.5" fill="#4fc3f7" opacity="0.9"/>
+          <path d="M20 20 L28 8" stroke="#4fc3f7" stroke-width="1.5" stroke-linecap="round" opacity="0.8">
+            <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="4s" repeatCount="indefinite"/>
+          </path>
+          <path d="M20 20 Q30 12 20 20" fill="rgba(79,195,247,0.15)">
+            <animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur="4s" repeatCount="indefinite"/>
+          </path>
+        </svg>
+      </div>
+      <div class="logo-text">
+        <div class="logo-title">J.A.R.V.I.S.</div>
+        <div class="logo-sub">PERSONAL LIFE OS</div>
+      </div>
+    </div>
+
+    <nav id="nav">
+      <div class="nav-item active" data-page="dashboard">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+        <div><div class="nav-label">ダッシュボード</div><div class="nav-sub">DASHBOARD</div></div>
+      </div>
+      <div class="nav-item" data-page="input">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        <div><div class="nav-label">入力する</div><div class="nav-sub">INPUT</div></div>
+      </div>
+      <div class="nav-item" data-page="history">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/></svg>
+        <div><div class="nav-label">履歴・推移</div><div class="nav-sub">HISTORY</div></div>
+      </div>
+      <div class="nav-item" data-page="analytics">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+        <div><div class="nav-label">分析・レポート</div><div class="nav-sub">ANALYTICS</div></div>
+      </div>
+      <div class="nav-item" data-page="coach">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a2 2 0 012 2 2 2 0 01-2 2 2 2 0 01-2-2 2 2 0 012-2m0 5c2.67 0 8 1.34 8 4v2H4v-2c0-2.66 5.33-4 8-4z"/></svg>
+        <div><div class="nav-label">AIコーチ</div><div class="nav-sub">AI COACH</div></div>
+      </div>
+      <div class="nav-item" data-page="goals">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <div><div class="nav-label">目標設定</div><div class="nav-sub">GOALS</div></div>
+      </div>
+      <div class="nav-item" data-page="settings">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+        <div><div class="nav-label">設定</div><div class="nav-sub">SETTINGS</div></div>
+      </div>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="ai-status" onclick="navigate('coach')">
+        <div class="ai-avatar">
+          <svg viewBox="0 0 36 36" fill="none">
+            <circle cx="18" cy="18" r="18" fill="rgba(4,12,28,0.9)"/>
+            <!-- Skull/face outline -->
+            <ellipse cx="18" cy="15" rx="8" ry="9" stroke="#4fc3f7" stroke-width="0.8" fill="rgba(79,195,247,0.05)"/>
+            <!-- Eye sockets -->
+            <ellipse cx="14.5" cy="14" rx="2.5" ry="2.5" fill="rgba(79,195,247,0.15)" stroke="#4fc3f7" stroke-width="0.7"/>
+            <ellipse cx="21.5" cy="14" rx="2.5" ry="2.5" fill="rgba(79,195,247,0.15)" stroke="#4fc3f7" stroke-width="0.7"/>
+            <!-- Eye glow -->
+            <circle cx="14.5" cy="14" r="1.2" fill="#4fc3f7" opacity="0.9">
+              <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+            </circle>
+            <circle cx="21.5" cy="14" r="1.2" fill="#4fc3f7" opacity="0.9">
+              <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite" begin="0.3s"/>
+            </circle>
+            <!-- Jaw/chin area -->
+            <path d="M11 21 Q18 26 25 21" stroke="#4fc3f7" stroke-width="0.7" fill="none"/>
+            <!-- Neck -->
+            <line x1="16" y1="24" x2="15" y2="28" stroke="#4fc3f7" stroke-width="0.6" opacity="0.6"/>
+            <line x1="20" y1="24" x2="21" y2="28" stroke="#4fc3f7" stroke-width="0.6" opacity="0.6"/>
+            <!-- Scan line -->
+            <line x1="8" y1="18" x2="28" y2="18" stroke="rgba(79,195,247,0.4)" stroke-width="0.5">
+              <animate attributeName="y1" values="8;30;8" dur="3s" repeatCount="indefinite"/>
+              <animate attributeName="y2" values="8;30;8" dur="3s" repeatCount="indefinite"/>
+            </line>
+          </svg>
+        </div>
+        <div class="ai-info">
+          <div class="ai-name">J.A.R.V.I.S.</div>
+          <div class="ai-desc" id="ai-status-text">本日のデータを分析しました</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── MAIN ─── -->
+  <div id="main">
+
+    <!-- TOPBAR -->
+    <div id="topbar">
+      <div class="topbar-left">
+        <h1 id="greeting">おはようございます、あなたの現在の状況です</h1>
+        <p id="last-updated">最終更新：読み込み中...</p>
+      </div>
+      <div class="topbar-right">
+        <div class="clock-box">
+          <div class="clock-date" id="clock-date">—</div>
+          <div class="clock-time" id="clock-time">--:--</div>
+        </div>
+        <div class="sync-badge">
+          <div class="sync-dot"></div>
+          <span>同期中</span>
+        </div>
+        <div class="topbar-menu">
+          <span></span><span></span><span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div id="content">
+
+      <!-- ─── DASHBOARD ─── -->
+      <div id="page-dashboard" class="page active">
+        <div class="grid grid-3" style="margin-bottom:16px;">
+
+          <!-- LIFE SCORE -->
+          <div class="card score-card">
+            <div class="score-ring-wrap">
+              <canvas id="scoreRing" class="score-ring-canvas" width="160" height="160"></canvas>
+              <div class="score-center">
+                <div class="score-label">LIFE SCORE</div>
+                <div class="score-value" id="total-score">82</div>
+                <div class="score-max">/100</div>
+              </div>
+            </div>
+            <div class="score-delta">
+              <span class="delta-up" id="score-delta">↑ +3</span>
+            </div>
+            <div class="score-week">先週比</div>
+          </div>
+
+          <!-- RADAR -->
+          <div class="card radar-card">
+            <div class="card-title"><div class="card-title-dot"></div>マズローの5つの欲求バランス</div>
+            <div class="radar-wrap">
+              <canvas id="radarChart" width="300" height="220"></canvas>
+            </div>
+          </div>
+
+          <!-- TREND -->
+          <div class="card trend-card">
+            <div class="card-title" style="justify-content:space-between;">
+              <span style="display:flex;align-items:center;gap:8px;"><div class="card-title-dot"></div>スコア推移</span>
+              <div class="trend-tabs">
+                <button class="tab-btn active" onclick="setTrendPeriod('week',this)">週</button>
+                <button class="tab-btn" onclick="setTrendPeriod('month',this)">月</button>
+                <button class="tab-btn" onclick="setTrendPeriod('year',this)">年</button>
+              </div>
+            </div>
+            <div class="trend-wrap">
+              <canvas id="trendChart" height="190"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- DIMENSION CARDS -->
+        <div class="grid grid-5" style="margin-bottom:16px;" id="dim-cards">
+          <!-- populated by JS -->
+        </div>
+
+        <!-- BOTTOM ROW -->
+        <div class="grid grid-2" style="margin-bottom:16px;">
+
+          <!-- ALERTS -->
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot"></div>アラート</div>
+            <div id="alerts-list"></div>
+          </div>
+
+          <!-- HIGHLIGHT -->
+          <div class="card highlight-card">
+            <div class="card-title" style="align-self:flex-start;"><div class="card-title-dot"></div>今週のハイライト</div>
+            <div class="hologram-wrap">
+              <div class="body-glow"></div>
+              <div class="scan-line"></div>
+              <!-- Human hologram SVG -->
+              <svg class="human-hologram" viewBox="0 0 100 160" fill="none" width="120" height="190" style="overflow:visible">
+                <defs>
+                  <radialGradient id="bodyGlow" cx="50%" cy="45%" r="50%">
+                    <stop offset="0%" stop-color="#4fc3f7" stop-opacity="0.2"/>
+                    <stop offset="100%" stop-color="#4fc3f7" stop-opacity="0"/>
+                  </radialGradient>
+                  <filter id="hglow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="2" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+                <!-- Ambient body glow -->
+                <ellipse cx="50" cy="85" rx="32" ry="68" fill="url(#bodyGlow)"/>
+                <!-- HEAD -->
+                <ellipse cx="50" cy="17" rx="13" ry="14" stroke="#4fc3f7" stroke-width="2.2" fill="rgba(79,195,247,0.12)" filter="url(#hglow)"/>
+                <ellipse cx="50" cy="17" rx="8" ry="9" stroke="rgba(0,229,255,0.3)" stroke-width="0.8" fill="none"/>
+                <!-- Eyes -->
+                <circle cx="45" cy="16" r="2.8" fill="rgba(0,229,255,0.35)" stroke="#00e5ff" stroke-width="1.2"><animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite"/></circle>
+                <circle cx="55" cy="16" r="2.8" fill="rgba(0,229,255,0.35)" stroke="#00e5ff" stroke-width="1.2"><animate attributeName="opacity" values="0.6;1;0.6" dur="2s" repeatCount="indefinite" begin="0.3s"/></circle>
+                <circle cx="45" cy="16" r="1.2" fill="#00e5ff"/>
+                <circle cx="55" cy="16" r="1.2" fill="#00e5ff"/>
+                <!-- NECK -->
+                <line x1="46" y1="31" x2="45" y2="38" stroke="#4fc3f7" stroke-width="2"/>
+                <line x1="54" y1="31" x2="55" y2="38" stroke="#4fc3f7" stroke-width="2"/>
+                <!-- SHOULDERS -->
+                <path d="M45 38 Q30 41 19 48" stroke="#4fc3f7" stroke-width="2.8" stroke-linecap="round" filter="url(#hglow)"/>
+                <path d="M55 38 Q70 41 81 48" stroke="#4fc3f7" stroke-width="2.8" stroke-linecap="round" filter="url(#hglow)"/>
+                <!-- UPPER ARMS -->
+                <line x1="19" y1="48" x2="14" y2="68" stroke="#4fc3f7" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="81" y1="48" x2="86" y2="68" stroke="#4fc3f7" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- Elbows -->
+                <circle cx="14" cy="68" r="4" fill="rgba(79,195,247,0.2)" stroke="#4fc3f7" stroke-width="1.8"/>
+                <circle cx="86" cy="68" r="4" fill="rgba(79,195,247,0.2)" stroke="#4fc3f7" stroke-width="1.8"/>
+                <!-- FOREARMS -->
+                <line x1="14" y1="68" x2="17" y2="88" stroke="#4fc3f7" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="86" y1="68" x2="83" y2="88" stroke="#4fc3f7" stroke-width="2.2" stroke-linecap="round"/>
+                <!-- Hands -->
+                <ellipse cx="17" cy="92" rx="5" ry="6" stroke="#4fc3f7" stroke-width="1.8" fill="rgba(79,195,247,0.14)"/>
+                <ellipse cx="83" cy="92" rx="5" ry="6" stroke="#4fc3f7" stroke-width="1.8" fill="rgba(79,195,247,0.14)"/>
+                <!-- TORSO -->
+                <path d="M45 38 L43 70 L57 70 L55 38 Z" stroke="#4fc3f7" stroke-width="2.2" fill="rgba(79,195,247,0.09)" filter="url(#hglow)"/>
+                <line x1="44" y1="49" x2="56" y2="49" stroke="#4fc3f7" stroke-width="1" opacity="0.5"/>
+                <line x1="43.5" y1="59" x2="56.5" y2="59" stroke="#4fc3f7" stroke-width="1" opacity="0.5"/>
+                <line x1="50" y1="38" x2="50" y2="70" stroke="rgba(0,229,255,0.3)" stroke-width="0.8" stroke-dasharray="3,3"/>
+                <!-- Heartbeat -->
+                <circle cx="50" cy="54" r="5" fill="rgba(0,229,255,0.15)"><animate attributeName="r" values="3;6;3" dur="1.1s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.4;0.1;0.4" dur="1.1s" repeatCount="indefinite"/></circle>
+                <!-- HIPS -->
+                <path d="M43 70 Q34 77 32 83 L40 83 L43.5 78 L56.5 78 L60 83 L68 83 Q66 77 57 70" stroke="#4fc3f7" stroke-width="2" fill="rgba(79,195,247,0.08)"/>
+                <!-- UPPER LEGS -->
+                <line x1="40" y1="83" x2="36" y2="112" stroke="#4fc3f7" stroke-width="2.5" stroke-linecap="round"/>
+                <line x1="60" y1="83" x2="64" y2="112" stroke="#4fc3f7" stroke-width="2.5" stroke-linecap="round"/>
+                <!-- Knees -->
+                <circle cx="36" cy="112" r="4.5" fill="rgba(79,195,247,0.2)" stroke="#4fc3f7" stroke-width="1.8"/>
+                <circle cx="64" cy="112" r="4.5" fill="rgba(79,195,247,0.2)" stroke="#4fc3f7" stroke-width="1.8"/>
+                <!-- LOWER LEGS -->
+                <line x1="36" y1="112" x2="33" y2="143" stroke="#4fc3f7" stroke-width="2.2" stroke-linecap="round"/>
+                <line x1="64" y1="112" x2="67" y2="143" stroke="#4fc3f7" stroke-width="2.2" stroke-linecap="round"/>
+                <!-- Feet -->
+                <path d="M33 143 L22 149 L34 150" stroke="#4fc3f7" stroke-width="1.8" fill="rgba(79,195,247,0.12)" stroke-linejoin="round"/>
+                <path d="M67 143 L78 149 L66 150" stroke="#4fc3f7" stroke-width="1.8" fill="rgba(79,195,247,0.12)" stroke-linejoin="round"/>
+                <!-- SCAN LINE -->
+                <rect x="12" width="76" height="3.5" fill="#00e5ff" rx="1.5">
+                  <animate attributeName="y" values="5;152;5" dur="4s" repeatCount="indefinite"/>
+                  <animate attributeName="opacity" values="0;0.8;0.8;0.8;0" keyTimes="0;0.04;0.5;0.96;1" dur="4s" repeatCount="indefinite"/>
+                </rect>
+                <!-- Outer aura ring -->
+                <ellipse cx="50" cy="90" rx="35" ry="70" stroke="rgba(79,195,247,0.07)" stroke-width="1.5" fill="none"><animate attributeName="stroke-opacity" values="0.05;0.18;0.05" dur="3s" repeatCount="indefinite"/></ellipse>
+              </svg>
+              <div class="platform">
+                <div class="platform-fill"></div>
+                <div class="platform-ring"></div>
+                <div class="platform-ring"></div>
+                <div class="platform-ring"></div>
+              </div>
+            </div>
+            <div class="highlight-text" id="highlight-text">
+              全体的にバランスは良好です<br>
+              特に<strong>「安全欲求」</strong>と<strong>「自己実現欲求」</strong>が<br>向上しています。
+            </div>
+            <button class="highlight-btn" onclick="navigate('analytics')">詳細を確認</button>
+          </div>
+        </div>
+
+        <!-- SUGGESTIONS -->
+        <div class="card" style="padding:16px 20px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div class="card-title" style="margin-bottom:0;"><div class="card-title-dot"></div>J.A.R.V.I.S.からの提案</div>
+            <button onclick="navigate('coach')" style="font-family:'Rajdhani';font-size:10px;letter-spacing:1.5px;color:var(--neon);background:transparent;border:1px solid rgba(79,195,247,0.25);border-radius:5px;padding:4px 12px;cursor:pointer;text-transform:uppercase;transition:all 0.2s;" onmouseover="this.style.background='rgba(79,195,247,0.1)'" onmouseout="this.style.background='transparent'">すべての提案を見る &rsaquo;</button>
+          </div>
+          <div class="suggestions" id="suggestions-list"></div>
+        </div>
+      </div>
+
+      <!-- ─── INPUT ─── -->
+      <div id="page-input" class="page">
+        <div class="card" style="margin-bottom:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+            <div class="card-title"><div class="card-title-dot"></div>今日のライフデータを入力</div>
+            <div style="font-size:11px;color:var(--text-dim);" id="input-date-label">—</div>
+          </div>
+          <div style="font-size:12px;color:var(--text-dim);">チェックを選択するだけ。所要時間 約5分。</div>
+        </div>
+
+        <!-- Health -->
+        <div class="input-section">
+          <div class="section-header">
+            <div class="section-badge badge-health">🫀 Health</div>
+            <div class="section-desc">生理的欲求 — 今日</div>
+          </div>
+          <div class="card">
+            <div class="check-group">
+              <div class="check-group-label">睡眠時間</div>
+              <div class="check-options" id="health-sleep"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">運動</div>
+              <div class="check-options" id="health-exercise"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">食事</div>
+              <div class="check-options" id="health-diet"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">水分摂取</div>
+              <div class="check-options" id="health-water"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <div class="input-section">
+          <div class="section-header">
+            <div class="section-badge badge-security">🛡️ Security</div>
+            <div class="section-desc">安全欲求 — 今月</div>
+          </div>
+          <div class="card">
+            <div class="check-group">
+              <div class="check-group-label">貯金（緊急資金）</div>
+              <div class="check-options" id="security-savings"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">収入安定性</div>
+              <div class="check-options" id="security-income"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">保険</div>
+              <div class="check-options" id="security-insurance"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">住環境</div>
+              <div class="check-options" id="security-housing"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Relationship -->
+        <div class="input-section">
+          <div class="section-header">
+            <div class="section-badge badge-relationship">👥 Relationship</div>
+            <div class="section-desc">所属欲求 — 今週</div>
+          </div>
+          <div class="card">
+            <div class="check-group">
+              <div class="check-group-label">家族との交流</div>
+              <div class="check-options" id="rel-family"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">友人との交流</div>
+              <div class="check-options" id="rel-friends"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">コミュニティ参加</div>
+              <div class="check-options" id="rel-community"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">恋愛・パートナー</div>
+              <div class="check-options" id="rel-romance"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Achievement -->
+        <div class="input-section">
+          <div class="section-header">
+            <div class="section-badge badge-achievement">⭐ Achievement</div>
+            <div class="section-desc">承認欲求 — 今週</div>
+          </div>
+          <div class="card">
+            <div class="check-group">
+              <div class="check-group-label">仕事・目標達成</div>
+              <div class="check-options" id="ach-work"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">SNS・発信</div>
+              <div class="check-options" id="ach-sns"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">自己評価</div>
+              <div class="check-options" id="ach-self"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">他者からの評価・感謝</div>
+              <div class="check-options" id="ach-others"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Growth -->
+        <div class="input-section">
+          <div class="section-header">
+            <div class="section-badge badge-growth">🚀 Growth</div>
+            <div class="section-desc">自己実現欲求 — 今週</div>
+          </div>
+          <div class="card">
+            <div class="check-group">
+              <div class="check-group-label">学習・勉強</div>
+              <div class="check-options" id="growth-learning"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">読書</div>
+              <div class="check-options" id="growth-reading"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">新しい挑戦</div>
+              <div class="check-options" id="growth-challenge"></div>
+            </div>
+            <div class="check-group">
+              <div class="check-group-label">人生目標への前進</div>
+              <div class="check-options" id="growth-goal"></div>
+            </div>
+          </div>
+        </div>
+
+        <button class="save-btn" onclick="saveInputData()">── データを保存する ──</button>
+        <div style="height:20px;"></div>
+      </div>
+
+      <!-- ─── HISTORY ─── -->
+      <div id="page-history" class="page">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title"><div class="card-title-dot"></div>スコア推移（全期間）</div>
+          <canvas id="historyChart" height="200"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-title-dot"></div>履歴</div>
+          <div id="history-list"></div>
+        </div>
+      </div>
+
+      <!-- ─── ANALYTICS ─── -->
+      <div id="page-analytics" class="page">
+        <div class="grid grid-2" style="margin-bottom:16px;">
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot"></div>欲求充足率</div>
+            <canvas id="pieChart" height="220"></canvas>
+          </div>
+          <div class="card" id="weekly-report">
+            <div class="card-title"><div class="card-title-dot"></div>週次レポート</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-title-dot"></div>各欲求の詳細推移</div>
+          <canvas id="multiLineChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- ─── AI COACH ─── -->
+      <div id="page-coach" class="page">
+        <div class="grid grid-2" style="margin-bottom:16px;">
+          <div class="card" id="coach-score-summary">
+            <!-- populated by renderCoach -->
+          </div>
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot"></div>今週の注目ポイント</div>
+            <div id="coach-insights" style="font-size:12px;color:var(--text-dim);line-height:1.8;">分析中...</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-title-dot"></div>AIコーチ — J.A.R.V.I.S. <span id="api-status-badge" style="margin-left:8px;font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(255,171,64,0.15);color:var(--neon-orange);border:1px solid rgba(255,171,64,0.3);">接続確認中...</span></div>
+          <div id="api-error-banner" style="display:none;" class="api-error">
+            ⚠️ ANTHROPIC_API_KEY が未設定です。<code>.env</code> ファイルに <code>ANTHROPIC_API_KEY=sk-ant-...</code> を設定してサーバーを再起動してください。
+          </div>
+          <div class="coach-chat" id="coach-chat">
+            <div class="chat-bubble ai">
+              <div class="bubble-avatar">🤖</div>
+              <div class="bubble-text" id="coach-greeting">
+                現在のデータを分析中です...
+              </div>
+            </div>
+          </div>
+          <div class="chat-input-area">
+            <input class="chat-input" id="chat-input" placeholder="J.A.R.V.I.S.に質問する（例：睡眠を改善するには？）" onkeydown="if(event.key==='Enter')sendChat()">
+            <button class="chat-send" id="chat-send-btn" onclick="sendChat()">送信</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── GOALS ─── -->
+      <div id="page-goals" class="page">
+        <div class="card">
+          <div class="card-title"><div class="card-title-dot"></div>目標設定</div>
+          <div id="goals-list"></div>
+          <button class="save-btn" style="margin-top:16px;" onclick="showAddGoal()">── 新しい目標を追加する ──</button>
+        </div>
+        <div id="add-goal-form" style="display:none;margin-top:16px;">
+          <div class="card">
+            <div class="card-title"><div class="card-title-dot"></div>目標を追加</div>
+            <input id="goal-name-input" class="chat-input" placeholder="目標名" style="width:100%;margin-bottom:10px;">
+            <div style="display:flex;gap:10px;margin-bottom:10px;">
+              <select id="goal-dim" class="chat-input" style="flex:1;">
+                <option value="health">Health（生理的欲求）</option>
+                <option value="security">Security（安全欲求）</option>
+                <option value="relationship">Relationship（所属欲求）</option>
+                <option value="achievement">Achievement（承認欲求）</option>
+                <option value="growth">Growth（自己実現欲求）</option>
+              </select>
+              <input id="goal-target" class="chat-input" type="number" placeholder="目標スコア（例:90）" style="flex:1;">
+            </div>
+            <button class="save-btn" onclick="addGoal()">追加する</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── SETTINGS ─── -->
+      <div id="page-settings" class="page">
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title"><div class="card-title-dot"></div>プロフィール</div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:6px;">名前</label>
+            <input id="settings-name" class="chat-input" style="width:100%;max-width:300px;" placeholder="あなたの名前">
+          </div>
+          <button class="save-btn" style="max-width:200px;" onclick="saveSettings()">保存する</button>
+        </div>
+        <div class="card" style="margin-bottom:16px;">
+          <div class="card-title"><div class="card-title-dot"></div>通知設定</div>
+          <div class="setting-row">
+            <div><div class="setting-label">アラート通知</div><div class="setting-sub">スコア低下時にアラートを表示</div></div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">週次レポート</div><div class="setting-sub">毎週日曜日にAI分析を自動生成</div></div>
+            <div class="toggle on" onclick="this.classList.toggle('on')"></div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">入力リマインダー</div><div class="setting-sub">毎日21時に入力を促す</div></div>
+            <div class="toggle" onclick="this.classList.toggle('on')"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><div class="card-title-dot"></div>データ管理</div>
+          <div class="setting-row">
+            <div><div class="setting-label">データをエクスポート</div><div class="setting-sub">JSON形式でダウンロード</div></div>
+            <button class="tab-btn active" onclick="exportData()">エクスポート</button>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-label">全データを削除</div><div class="setting-sub">すべての記録を削除します（取消不可）</div></div>
+            <button class="tab-btn" style="border-color:var(--neon-red);color:var(--neon-red);" onclick="if(confirm('本当に削除しますか？'))clearData()">削除</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  DATA LAYER
+// ═══════════════════════════════════════════════════════
+
+const DB_KEY = 'jarvis_life_os';
+
+function getDB() {
+  const raw = localStorage.getItem(DB_KEY);
+  if (!raw) return defaultDB();
+  try { return JSON.parse(raw); } catch { return defaultDB(); }
+}
+
+function saveDB(db) {
+  localStorage.setItem(DB_KEY, JSON.stringify(db));
+}
+
+function defaultDB() {
+  return {
+    profile: { name: '' },
+    entries: [],
+    goals: [
+      { id: 1, name: '毎日7時間以上睡眠', dim: 'health', target: 90, current: 75 },
+      { id: 2, name: '緊急資金6ヶ月分確保', dim: 'security', target: 100, current: 90 },
+      { id: 3, name: '週2回以上の友人交流', dim: 'relationship', target: 85, current: 70 },
+      { id: 4, name: '月1件以上の表彰/感謝受領', dim: 'achievement', target: 95, current: 88 },
+      { id: 5, name: '毎日30分学習', dim: 'growth', target: 95, current: 87 },
+    ],
+    // seed demo data
+    seeded: false
+  };
+}
+
+function seedDemoData(db) {
+  if (db.seeded) return;
+  const weeks = ['W1','W2','W3','W4'];
+  const baseScores = [68, 72, 78, 82];
+  const dims = ['health','security','relationship','achievement','growth'];
+  const baseDims = [60,75,55,75,70];
+  const growDims = [75,90,70,88,87];
+
+  weeks.forEach((w, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (3-i)*7);
+    const entry = {
+      date: d.toISOString().split('T')[0],
+      label: w,
+      scores: {}
+    };
+    dims.forEach((dim, j) => {
+      entry.scores[dim] = Math.round(baseDims[j] + (growDims[j]-baseDims[j]) * (i/3));
+    });
+    entry.total = Math.round(Object.values(entry.scores).reduce((a,b)=>a+b,0)/5);
+    db.entries.push(entry);
+  });
+  db.seeded = true;
+}
+
+// Input form definitions
+const INPUT_DEFS = {
+  'health-sleep': {
+    type: 'radio', field: ['health','sleep'],
+    options: [
+      { label: '7時間以上', score: 100 },
+      { label: '6〜7時間', score: 75 },
+      { label: '5〜6時間', score: 40 },
+      { label: '5時間未満', score: 10 },
+    ]
+  },
+  'health-exercise': {
+    type: 'radio', field: ['health','exercise'],
+    options: [
+      { label: '実施（30分以上）', score: 100 },
+      { label: '実施（軽め）', score: 60 },
+      { label: '未実施', score: 0 },
+    ]
+  },
+  'health-diet': {
+    type: 'radio', field: ['health','diet'],
+    options: [
+      { label: '3食', score: 100 },
+      { label: '2食', score: 65 },
+      { label: '1食以下', score: 20 },
+    ]
+  },
+  'health-water': {
+    type: 'radio', field: ['health','water'],
+    options: [
+      { label: '2L以上', score: 100 },
+      { label: '1L以上', score: 65 },
+      { label: '不足', score: 20 },
+    ]
+  },
+  'security-savings': {
+    type: 'radio', field: ['security','savings'],
+    options: [
+      { label: '6ヶ月以上', score: 100 },
+      { label: '3ヶ月以上', score: 75 },
+      { label: '1ヶ月以上', score: 40 },
+      { label: '不足', score: 10 },
+    ]
+  },
+  'security-income': {
+    type: 'radio', field: ['security','income'],
+    options: [
+      { label: '安定', score: 100 },
+      { label: 'やや不安', score: 55 },
+      { label: '不安', score: 15 },
+    ]
+  },
+  'security-insurance': {
+    type: 'radio', field: ['security','insurance'],
+    options: [
+      { label: '加入済', score: 100 },
+      { label: '未加入', score: 30 },
+    ]
+  },
+  'security-housing': {
+    type: 'radio', field: ['security','housing'],
+    options: [
+      { label: '満足', score: 100 },
+      { label: '普通', score: 60 },
+      { label: '不満', score: 20 },
+    ]
+  },
+  'rel-family': {
+    type: 'radio', field: ['relationship','family'],
+    options: [
+      { label: '交流あり', score: 100 },
+      { label: 'なし', score: 0 },
+    ]
+  },
+  'rel-friends': {
+    type: 'radio', field: ['relationship','friends'],
+    options: [
+      { label: '交流あり（複数）', score: 100 },
+      { label: '交流あり（1人）', score: 65 },
+      { label: 'なし', score: 0 },
+    ]
+  },
+  'rel-community': {
+    type: 'radio', field: ['relationship','community'],
+    options: [
+      { label: '参加', score: 100 },
+      { label: '未参加', score: 20 },
+    ]
+  },
+  'rel-romance': {
+    type: 'radio', field: ['relationship','romance'],
+    options: [
+      { label: '良好', score: 100 },
+      { label: '普通', score: 60 },
+      { label: '課題あり', score: 20 },
+      { label: '該当なし', score: 50 },
+    ]
+  },
+  'ach-work': {
+    type: 'radio', field: ['achievement','work'],
+    options: [
+      { label: '達成', score: 100 },
+      { label: '部分達成', score: 60 },
+      { label: '未達', score: 15 },
+    ]
+  },
+  'ach-sns': {
+    type: 'radio', field: ['achievement','sns'],
+    options: [
+      { label: '複数回発信', score: 100 },
+      { label: '1回発信', score: 65 },
+      { label: '未実施', score: 0 },
+    ]
+  },
+  'ach-self': {
+    type: 'radio', field: ['achievement','selfEval'],
+    options: [
+      { label: '高い', score: 100 },
+      { label: '普通', score: 55 },
+      { label: '低い', score: 10 },
+    ]
+  },
+  'ach-others': {
+    type: 'radio', field: ['achievement','othersEval'],
+    options: [
+      { label: '受けた（複数）', score: 100 },
+      { label: '受けた（1回）', score: 70 },
+      { label: 'なし', score: 10 },
+    ]
+  },
+  'growth-learning': {
+    type: 'radio', field: ['growth','learning'],
+    options: [
+      { label: '毎日実施', score: 100 },
+      { label: '2〜3日実施', score: 65 },
+      { label: '未実施', score: 0 },
+    ]
+  },
+  'growth-reading': {
+    type: 'radio', field: ['growth','reading'],
+    options: [
+      { label: '実施', score: 100 },
+      { label: '未実施', score: 0 },
+    ]
+  },
+  'growth-challenge': {
+    type: 'radio', field: ['growth','challenge'],
+    options: [
+      { label: '新しいことをした', score: 100 },
+      { label: 'していない', score: 20 },
+    ]
+  },
+  'growth-goal': {
+    type: 'radio', field: ['growth','lifeGoal'],
+    options: [
+      { label: '前進した', score: 100 },
+      { label: 'やや前進', score: 60 },
+      { label: '停滞', score: 15 },
+    ]
+  },
+};
+
+// current input state
+let inputState = {};
+
+// ═══════════════════════════════════════════════════════
+//  SCORE CALCULATIONS
+// ═══════════════════════════════════════════════════════
+
+const DIM_WEIGHTS = {
+  health:       { sleep:30, exercise:25, diet:25, water:20 },
+  security:     { savings:35, income:35, insurance:15, housing:15 },
+  relationship: { family:25, friends:30, community:20, romance:25 },
+  achievement:  { work:35, sns:15, selfEval:25, othersEval:25 },
+  growth:       { learning:35, reading:20, challenge:25, lifeGoal:20 },
+};
+
+function calcDimScore(dim, vals) {
+  const w = DIM_WEIGHTS[dim];
+  let total = 0, wSum = 0;
+  for (const [k, wt] of Object.entries(w)) {
+    if (vals[k] !== undefined) { total += vals[k] * wt; wSum += wt; }
+  }
+  return wSum > 0 ? Math.round(total / wSum) : 0;
+}
+
+function calcTotalScore(dimScores) {
+  const vals = Object.values(dimScores);
+  return Math.round(vals.reduce((a,b)=>a+b,0) / vals.length);
+}
+
+function getLatestScores(db) {
+  if (!db.entries.length) return {
+    health:75, security:90, relationship:70, achievement:88, growth:87, total:82
+  };
+  const last = db.entries[db.entries.length - 1];
+  return { ...last.scores, total: last.total };
+}
+
+// ═══════════════════════════════════════════════════════
+//  CLOCK
+// ═══════════════════════════════════════════════════════
+
+function updateClock() {
+  const now = new Date();
+  const days = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  document.getElementById('clock-date').textContent =
+    `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')} ${days[now.getDay()]}`;
+  document.getElementById('clock-time').textContent =
+    `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} ${now.getHours()<12?'AM':'PM'}`;
+
+  const h = now.getHours();
+  document.getElementById('greeting').textContent =
+    h < 12 ? 'おはようございます、あなたの現在の状況です' :
+    h < 17 ? 'こんにちは、あなたの現在の状況です' :
+             'こんばんは、あなたの現在の状況です';
+}
+
+setInterval(updateClock, 1000);
+updateClock();
+
+// ═══════════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════════
+
+function navigate(pageId) {
+  document.querySelectorAll('.nav-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.page === pageId);
+  });
+  document.querySelectorAll('.page').forEach(el => {
+    el.classList.toggle('active', el.id === 'page-' + pageId);
+  });
+  if (pageId === 'history') renderHistory();
+  if (pageId === 'analytics') renderAnalytics();
+  if (pageId === 'goals') renderGoals();
+  if (pageId === 'coach') { chatHistory = []; renderCoach(); }
+  if (pageId === 'settings') renderSettings();
+}
+
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => navigate(el.dataset.page));
+});
+
+// ═══════════════════════════════════════════════════════
+//  CHARTS
+// ═══════════════════════════════════════════════════════
+
+let radarChart, trendChart, scoreRingCtx, historyChart, pieChart, multiLineChart;
+let dimRings = {};
+
+const DIM_COLORS = {
+  health:       '#00e676',
+  security:     '#4fc3f7',
+  relationship: '#b388ff',
+  achievement:  '#ffab40',
+  growth:       '#00e5ff',
+};
+
+const DIM_SVG_ICONS = {
+  health: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+  security: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>`,
+  relationship: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+  achievement: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`,
+  growth: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`,
+};
+
+const DIM_LABELS = {
+  health: ['生理的欲求','Health'],
+  security: ['安全欲求','Security'],
+  relationship: ['所属欲求','Relationship'],
+  achievement: ['承認欲求','Achievement'],
+  growth: ['自己実現欲求','Growth'],
+};
+
+function drawRing(canvas, value, color, bgColor='rgba(255,255,255,0.05)', size=76, lineWidth=6, showTicks=false) {
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = size * dpr;
+  canvas.height = size * dpr;
+  canvas.style.width = size + 'px';
+  canvas.style.height = size + 'px';
+  ctx.scale(dpr, dpr);
+
+  const cx = size/2, cy = size/2;
+  const outerR = size/2 - 2;
+  const r = outerR - lineWidth/2 - 2;
+  ctx.clearRect(0,0,size,size);
+
+  if (showTicks) {
+    // Tick marks
+    for (let i = 0; i < 60; i++) {
+      const angle = (i / 60) * Math.PI * 2 - Math.PI/2;
+      const isMain = i % 10 === 0;
+      const tickLen = isMain ? 5 : 3;
+      const tickR = outerR - 1;
+      const x1 = cx + Math.cos(angle) * tickR;
+      const y1 = cy + Math.sin(angle) * tickR;
+      const x2 = cx + Math.cos(angle) * (tickR - tickLen);
+      const y2 = cy + Math.sin(angle) * (tickR - tickLen);
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.strokeStyle = isMain ? 'rgba(79,195,247,0.4)' : 'rgba(79,195,247,0.15)';
+      ctx.lineWidth = isMain ? 1.2 : 0.7;
+      ctx.stroke();
+    }
+  }
+
+  // bg ring
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, -Math.PI/2, Math.PI*2 - Math.PI/2);
+  ctx.strokeStyle = bgColor;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.stroke();
+
+  // value ring
+  const angle = (value/100) * Math.PI * 2;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, -Math.PI/2, angle - Math.PI/2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = showTicks ? 16 : 10;
+  ctx.stroke();
+
+  // Glow layer
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, -Math.PI/2, angle - Math.PI/2);
+  ctx.strokeStyle = color + '40';
+  ctx.lineWidth = lineWidth + 4;
+  ctx.lineCap = 'round';
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 0.4;
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+}
+
+function initScoreRing(value) {
+  const canvas = document.getElementById('scoreRing');
+  drawRing(canvas, value, '#4fc3f7', 'rgba(79,195,247,0.07)', 180, 11, true);
+  const el = document.getElementById('total-score');
+  el.textContent = value;
+  el.style.color = value >= 80 ? '#4fc3f7' : value >= 60 ? '#ffab40' : '#ff5252';
+  el.style.textShadow = `0 0 30px ${value >= 80 ? 'rgba(79,195,247,0.6)' : value >= 60 ? 'rgba(255,171,64,0.6)' : 'rgba(255,82,82,0.6)'}`;
+}
+
+function initRadar(scores) {
+  const ctx = document.getElementById('radarChart').getContext('2d');
+  if (radarChart) radarChart.destroy();
+
+  radarChart = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['自己実現欲求\nGrowth', '承認欲求\nAchievement', '生理的欲求\nHealth', '安全欲求\nSecurity', '所属欲求\nRelationship'],
+      datasets: [{
+        data: [scores.growth, scores.achievement, scores.health, scores.security, scores.relationship],
+        borderColor: '#4fc3f7',
+        backgroundColor: 'rgba(79,195,247,0.15)',
+        borderWidth: 2,
+        pointBackgroundColor: '#4fc3f7',
+        pointBorderColor: '#4fc3f7',
+        pointRadius: 4,
+        pointHoverRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          min: 0, max: 100,
+          ticks: { display: false, stepSize: 25 },
+          grid: { color: 'rgba(79,195,247,0.1)' },
+          angleLines: { color: 'rgba(79,195,247,0.15)' },
+          pointLabels: {
+            color: 'rgba(200,230,255,0.7)',
+            font: { size: 10 },
+          }
+        }
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+}
+
+const TREND_DATA = {
+  week: {
+    labels: ['5/14','5/15','5/16','5/17','5/18','5/19','5/20'],
+    datasets: [
+      { label:'Health',       data:[60,65,68,62,70,72,75], color:'#00e676' },
+      { label:'Security',     data:[85,87,88,90,89,90,90], color:'#4fc3f7' },
+      { label:'Relationship', data:[50,55,60,58,65,68,70], color:'#b388ff' },
+      { label:'Achievement',  data:[75,78,80,82,84,86,88], color:'#ffab40' },
+      { label:'Growth',       data:[70,72,75,78,82,85,87], color:'#00e5ff' },
+    ]
+  },
+  month: {
+    labels: ['W1','W2','W3','W4'],
+    datasets: [
+      { label:'Health',       data:[60,66,71,75], color:'#00e676' },
+      { label:'Security',     data:[85,87,89,90], color:'#4fc3f7' },
+      { label:'Relationship', data:[50,58,65,70], color:'#b388ff' },
+      { label:'Achievement',  data:[75,80,84,88], color:'#ffab40' },
+      { label:'Growth',       data:[70,75,81,87], color:'#00e5ff' },
+    ]
+  },
+  year: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+    datasets: [
+      { label:'Health',       data:[50,55,60,66,71,75], color:'#00e676' },
+      { label:'Security',     data:[70,75,80,84,87,90], color:'#4fc3f7' },
+      { label:'Relationship', data:[40,45,52,60,65,70], color:'#b388ff' },
+      { label:'Achievement',  data:[60,66,72,78,83,88], color:'#ffab40' },
+      { label:'Growth',       data:[55,62,68,75,81,87], color:'#00e5ff' },
+    ]
+  },
+};
+
+let currentTrendPeriod = 'week';
+
+function initTrend(period) {
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  if (trendChart) trendChart.destroy();
+  const d = TREND_DATA[period];
+
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: d.labels,
+      datasets: d.datasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        borderColor: ds.color,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: ds.color,
+        tension: 0.4,
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          min: 0, max: 100,
+          grid: { color: 'rgba(79,195,247,0.06)' },
+          ticks: { color: 'rgba(200,230,255,0.5)', font: { size: 10 } },
+        },
+        x: {
+          grid: { display: false },
+          ticks: { color: 'rgba(200,230,255,0.5)', font: { size: 10 } },
+        }
+      },
+      plugins: {
+        legend: {
+          labels: { color: 'rgba(200,230,255,0.7)', font: { size: 10 }, boxWidth: 12, padding: 12 }
+        }
+      }
+    }
+  });
+}
+
+function setTrendPeriod(period, btn) {
+  document.querySelectorAll('.trend-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTrendPeriod = period;
+  initTrend(period);
+}
+
+// ═══════════════════════════════════════════════════════
+//  DIMENSION CARDS
+// ═══════════════════════════════════════════════════════
+
+const DIM_CHECKS_DEMO = {
+  health:       ['睡眠', '食事', '運動', '休息'],
+  security:     ['経済', '収入安定', '保険・備え', '住環境'],
+  relationship: ['家族・親密', '友人関係', 'コミュニティ', '支え・つながり'],
+  achievement:  ['仕事・成果', '他者評価', '自己肯定感', '社会的貢献'],
+  growth:       ['学び・成長', '挑戦・創造', '目標・ビジョン', '価値観の実現'],
+};
+
+function renderDimCards(scores) {
+  const container = document.getElementById('dim-cards');
+  container.innerHTML = '';
+
+  Object.keys(DIM_LABELS).forEach(dim => {
+    const score = scores[dim] || 0;
+    const color = DIM_COLORS[dim];
+    const [jp, en] = DIM_LABELS[dim];
+
+    const card = document.createElement('div');
+    card.className = 'card dim-card';
+    card.innerHTML = `
+      <div class="dim-icon-wrap" style="background:${color}18;border:1px solid ${color}40;">
+        <span style="color:${color}">${DIM_SVG_ICONS[dim]}</span>
+      </div>
+      <div style="text-align:center;">
+        <div class="dim-name">${jp}</div>
+        <div class="dim-sub">${en}</div>
+      </div>
+      <div class="dim-ring-wrap">
+        <canvas id="dimRing-${dim}" width="76" height="76"></canvas>
+        <div class="dim-score-center">
+          <div class="dim-score" style="color:${color}">${score}</div>
+          <div class="dim-score-max">/100</div>
+        </div>
+      </div>
+      <div class="dim-checks">
+        ${DIM_CHECKS_DEMO[dim].map(c => `
+          <div class="dim-check">
+            <div class="check-icon check-ok">✓</div>
+            <span>${c}</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+    container.appendChild(card);
+
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById(`dimRing-${dim}`);
+      if (canvas) drawRing(canvas, score, color, 'rgba(255,255,255,0.05)', 76, 6);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  ALERTS
+// ═══════════════════════════════════════════════════════
+
+function renderAlerts(scores, db) {
+  const container = document.getElementById('alerts-list');
+  const alerts = [];
+
+  if (scores.health < 70) alerts.push({
+    cls: 'alert-red', icon: '⚠️',
+    title: '睡眠時間が不足しています',
+    desc: `過去7日で−${Math.round((80-scores.health)/2)}ポイント`
+  });
+  if (scores.security < 75) alerts.push({
+    cls: 'alert-orange', icon: '⚠️',
+    title: '緊急資金が不足しています',
+    desc: '生活費の3ヶ月分を下回っています'
+  });
+
+  // check last relationship entry
+  const lastEntry = db.entries[db.entries.length-1];
+  if (!lastEntry || scores.relationship < 65) alerts.push({
+    cls: 'alert-yellow', icon: '⚡',
+    title: '友人との交流が減少傾向です',
+    desc: '2週間交流がありません'
+  });
+
+  if (alerts.length === 0) alerts.push({
+    cls: 'alert-yellow', icon: '✅',
+    title: '現在アラートはありません',
+    desc: '全スコアが良好な範囲です'
+  });
+
+  container.innerHTML = alerts.map(a => `
+    <div class="alert-item ${a.cls}">
+      <div class="alert-icon">${a.icon}</div>
+      <div class="alert-body">
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-desc">${a.desc}</div>
+      </div>
+      <div class="alert-arrow">›</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  SUGGESTIONS
+// ═══════════════════════════════════════════════════════
+
+const SUGGESTIONS = {
+  health: [
+    { icon:'😴', title:'睡眠の質を上げましょう', desc:'就寝30分前のスマホOFFをおすすめします' },
+    { icon:'🏃', title:'運動を習慣化しましょう', desc:'まず10分のウォーキングから始めてみましょう' },
+  ],
+  relationship: [
+    { icon:'👫', title:'友人や家族と時間を作りましょう', desc:'今週1回以上の交流を目指しましょう' },
+  ],
+  growth: [
+    { icon:'📚', title:'挑戦したいことに踏み出しましょう', desc:'小さな挑戦が成長につながります' },
+  ],
+  achievement: [
+    { icon:'🎯', title:'仕事の目標を再設定しましょう', desc:'週次で振り返りの時間を設けましょう' },
+  ],
+  security: [
+    { icon:'💰', title:'資産形成を始めましょう', desc:'月1万円の積立から始めてみましょう' },
+  ],
+};
+
+function renderSuggestions(scores) {
+  const container = document.getElementById('suggestions-list');
+  const sugs = [];
+
+  // pick suggestions based on lowest scoring dims
+  const sorted = Object.entries(scores)
+    .filter(([k]) => k !== 'total')
+    .sort(([,a],[,b]) => a-b);
+
+  sorted.slice(0,3).forEach(([dim]) => {
+    const s = SUGGESTIONS[dim];
+    if (s) sugs.push(s[0]);
+  });
+
+  container.innerHTML = sugs.slice(0,3).map(s => `
+    <div class="suggestion-item">
+      <div class="sug-icon">${s.icon}</div>
+      <div class="sug-body">
+        <div class="sug-title">${s.title}</div>
+        <div class="sug-desc">${s.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  INPUT PAGE
+// ═══════════════════════════════════════════════════════
+
+function renderInputForms() {
+  document.getElementById('input-date-label').textContent = new Date().toLocaleDateString('ja-JP', {year:'numeric',month:'long',day:'numeric',weekday:'short'});
+
+  Object.entries(INPUT_DEFS).forEach(([id, def]) => {
+    const container = document.getElementById(id);
+    if (!container) return;
+
+    container.innerHTML = def.options.map((opt, i) => `
+      <label class="check-option" id="${id}-opt-${i}" onclick="selectOption('${id}', ${i}, ${opt.score})">
+        <div class="check-box">✓</div>
+        ${opt.label}
+      </label>
+    `).join('');
+  });
+}
+
+function selectOption(groupId, idx, score) {
+  document.querySelectorAll(`[id^="${groupId}-opt-"]`).forEach(el => el.classList.remove('selected'));
+  document.getElementById(`${groupId}-opt-${idx}`).classList.add('selected');
+  inputState[groupId] = { idx, score };
+}
+
+function saveInputData() {
+  const db = getDB();
+  const today = new Date().toISOString().split('T')[0];
+
+  // compute dim scores from inputState
+  const dimScores = { health: 0, security: 0, relationship: 0, achievement: 0, growth: 0 };
+  const dimCounts = { health: 0, security: 0, relationship: 0, achievement: 0, growth: 0 };
+
+  const dimMap = {
+    'health-sleep': 'health', 'health-exercise': 'health', 'health-diet': 'health', 'health-water': 'health',
+    'security-savings': 'security', 'security-income': 'security', 'security-insurance': 'security', 'security-housing': 'security',
+    'rel-family': 'relationship', 'rel-friends': 'relationship', 'rel-community': 'relationship', 'rel-romance': 'relationship',
+    'ach-work': 'achievement', 'ach-sns': 'achievement', 'ach-self': 'achievement', 'ach-others': 'achievement',
+    'growth-learning': 'growth', 'growth-reading': 'growth', 'growth-challenge': 'growth', 'growth-goal': 'growth',
+  };
+
+  let filled = 0;
+  Object.entries(inputState).forEach(([group, {score}]) => {
+    const dim = dimMap[group];
+    if (dim) { dimScores[dim] += score; dimCounts[dim]++; filled++; }
+  });
+
+  if (filled < 5) { showToast('⚠️ もう少し入力してください'); return; }
+
+  Object.keys(dimScores).forEach(dim => {
+    if (dimCounts[dim] > 0) dimScores[dim] = Math.round(dimScores[dim] / dimCounts[dim]);
+    else dimScores[dim] = 50;
+  });
+
+  const total = calcTotalScore(dimScores);
+  const existing = db.entries.findIndex(e => e.date === today);
+  const entry = { date: today, label: today, scores: dimScores, total };
+
+  if (existing >= 0) db.entries[existing] = entry;
+  else db.entries.push(entry);
+
+  saveDB(db);
+  showToast('✅ データを保存しました');
+  setTimeout(() => { navigate('dashboard'); initDashboard(); }, 800);
+}
+
+// ═══════════════════════════════════════════════════════
+//  HISTORY
+// ═══════════════════════════════════════════════════════
+
+function renderHistory() {
+  const db = getDB();
+  const entries = db.entries.slice().reverse();
+
+  // history chart
+  const ctx = document.getElementById('historyChart').getContext('2d');
+  if (historyChart) historyChart.destroy();
+
+  const labels = db.entries.map(e => e.label || e.date.slice(5));
+  const totals = db.entries.map(e => e.total);
+
+  historyChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Life Score',
+        data: totals,
+        borderColor: '#4fc3f7',
+        backgroundColor: 'rgba(79,195,247,0.08)',
+        fill: true,
+        borderWidth: 2,
+        pointRadius: 4,
+        tension: 0.4,
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { min: 0, max: 100, grid: { color: 'rgba(79,195,247,0.06)' }, ticks: { color: 'rgba(200,230,255,0.5)', font: {size:10} } },
+        x: { grid: { display: false }, ticks: { color: 'rgba(200,230,255,0.5)', font: {size:10} } },
+      },
+      plugins: { legend: { display: false } }
+    }
+  });
+
+  // history list
+  const list = document.getElementById('history-list');
+  if (!entries.length) { list.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:16px 0;">まだデータがありません。「入力する」から記録を始めましょう。</div>'; return; }
+
+  list.innerHTML = entries.map(e => `
+    <div class="history-row">
+      <div class="history-date">${e.label || e.date.slice(5)}</div>
+      <div class="history-bars">
+        ${Object.entries(e.scores).map(([dim, score]) => `
+          <div class="history-bar-wrap">
+            <div class="history-bar-label" style="color:${DIM_COLORS[dim]}">${DIM_LABELS[dim][1]}</div>
+            <div class="history-bar">
+              <div class="history-bar-fill" style="width:${score}%;background:${DIM_COLORS[dim]}"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="history-score" style="color:${e.total>=80?'#4fc3f7':e.total>=60?'#ffab40':'#ff5252'}">${e.total}</div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+//  ANALYTICS
+// ═══════════════════════════════════════════════════════
+
+function renderAnalytics() {
+  const db = getDB();
+  const scores = getLatestScores(db);
+
+  // pie chart
+  const pCtx = document.getElementById('pieChart').getContext('2d');
+  if (pieChart) pieChart.destroy();
+  pieChart = new Chart(pCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Health','Security','Relationship','Achievement','Growth'],
+      datasets: [{
+        data: [scores.health, scores.security, scores.relationship, scores.achievement, scores.growth],
+        backgroundColor: Object.values(DIM_COLORS).map(c => c + '55'),
+        borderColor: Object.values(DIM_COLORS),
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: 'rgba(200,230,255,0.7)', font: {size:11}, padding: 16, boxWidth: 12 } }
+      },
+      cutout: '55%',
+    }
+  });
+
+  // weekly report
+  const report = document.getElementById('weekly-report');
+  const last2 = db.entries.slice(-2);
+  let improved = [], declined = [];
+  if (last2.length >= 2) {
+    const [prev, curr] = last2;
+    Object.keys(curr.scores).forEach(dim => {
+      const diff = curr.scores[dim] - prev.scores[dim];
+      if (diff > 0) improved.push(`${DIM_LABELS[dim][0]} (+${diff})`);
+      if (diff < 0) declined.push(`${DIM_LABELS[dim][0]} (${diff})`);
+    });
+  }
+
+  report.innerHTML = `
+    <div class="card-title"><div class="card-title-dot"></div>週次レポート</div>
+    <div style="font-size:28px;font-weight:200;color:var(--neon);margin-bottom:4px;">${scores.total}<span style="font-size:14px;color:var(--text-dim)">/100</span></div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:20px;">今週のスコア</div>
+    ${improved.length ? `
+      <div style="margin-bottom:12px;">
+        <div style="font-size:10px;letter-spacing:1px;color:var(--neon-green);margin-bottom:6px;">↑ 改善</div>
+        ${improved.map(s => `<div style="font-size:11px;color:var(--text-dim);margin-bottom:3px;">・${s}</div>`).join('')}
+      </div>
+    ` : ''}
+    ${declined.length ? `
+      <div style="margin-bottom:12px;">
+        <div style="font-size:10px;letter-spacing:1px;color:var(--neon-red);margin-bottom:6px;">↓ 悪化</div>
+        ${declined.map(s => `<div style="font-size:11px;color:var(--text-dim);margin-bottom:3px;">・${s}</div>`).join('')}
+      </div>
+    ` : ''}
+    <div>
+      <div style="font-size:10px;letter-spacing:1px;color:var(--neon-orange);margin-bottom:6px;">💡 推奨アクション</div>
+      <div style="font-size:11px;color:var(--text-dim);">今週は人との交流を2回増やしましょう</div>
+    </div>
+  `;
+
+  // multi-line chart
+  const mlCtx = document.getElementById('multiLineChart').getContext('2d');
+  if (multiLineChart) multiLineChart.destroy();
+  const d = TREND_DATA.month;
+  multiLineChart = new Chart(mlCtx, {
+    type: 'line',
+    data: {
+      labels: d.labels,
+      datasets: d.datasets.map(ds => ({
+        label: ds.label,
+        data: ds.data,
+        borderColor: ds.color,
+        backgroundColor: 'transparent',
+        borderWidth: 2,
+        pointRadius: 3,
+        tension: 0.4,
+      }))
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: { min:0, max:100, grid:{color:'rgba(79,195,247,0.06)'}, ticks:{color:'rgba(200,230,255,0.5)',font:{size:10}} },
+        x: { grid:{display:false}, ticks:{color:'rgba(200,230,255,0.5)',font:{size:10}} },
+      },
+      plugins: {
+        legend: { labels:{color:'rgba(200,230,255,0.7)',font:{size:10},boxWidth:12,padding:12} }
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  AI COACH
+// ═══════════════════════════════════════════════════════
+
+// In-memory conversation history for the session
+let chatHistory = [];
+let isStreaming = false;
+
+async function checkApiStatus() {
+  try {
+    const res = await fetch('/api/health');
+    const data = await res.json();
+    const badge = document.getElementById('api-status-badge');
+    const errorBanner = document.getElementById('api-error-banner');
+    if (data.apiKeySet) {
+      badge.textContent = '✓ 接続済み';
+      badge.style.background = 'rgba(0,230,118,0.15)';
+      badge.style.color = 'var(--neon-green)';
+      badge.style.borderColor = 'rgba(0,230,118,0.3)';
+      errorBanner.style.display = 'none';
+    } else {
+      badge.textContent = '✗ APIキー未設定';
+      badge.style.background = 'rgba(255,82,82,0.15)';
+      badge.style.color = 'var(--neon-red)';
+      badge.style.borderColor = 'rgba(255,82,82,0.3)';
+      errorBanner.style.display = 'block';
+    }
+    return data.apiKeySet;
+  } catch {
+    // running as static file — server not available
+    const badge = document.getElementById('api-status-badge');
+    if (badge) {
+      badge.textContent = '✗ サーバー未起動';
+      badge.style.background = 'rgba(255,82,82,0.15)';
+      badge.style.color = 'var(--neon-red)';
+      badge.style.borderColor = 'rgba(255,82,82,0.3)';
+    }
+    return false;
+  }
+}
+
+async function renderCoach() {
+  const db = getDB();
+  const scores = getLatestScores(db);
+  const dims = Object.entries(scores).filter(([k]) => k !== 'total');
+  const sorted = [...dims].sort(([,a],[,b]) => b-a);
+  const highest = sorted[0];
+  const lowest = sorted[sorted.length-1];
+
+  // Score summary card
+  const summary = document.getElementById('coach-score-summary');
+  summary.innerHTML = `
+    <div class="card-title"><div class="card-title-dot"></div>現在のスコアサマリー</div>
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">
+      <div style="font-size:48px;font-weight:200;color:var(--neon);text-shadow:0 0 20px rgba(79,195,247,0.5)">${scores.total}</div>
+      <div>
+        <div style="font-size:11px;color:var(--text-dim);">LIFE SCORE / 100</div>
+        <div style="font-size:11px;color:var(--neon-green);margin-top:4px;">↑ 良好なバランス</div>
+      </div>
+    </div>
+    ${dims.map(([dim, val]) => `
+      <div style="margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:3px;">
+          <span style="color:${DIM_COLORS[dim]}">${DIM_ICONS[dim]} ${DIM_LABELS[dim][0]}</span>
+          <span style="color:var(--text-dim)">${val}/100</span>
+        </div>
+        <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:2px;">
+          <div style="width:${val}%;height:100%;background:${DIM_COLORS[dim]};border-radius:2px;box-shadow:0 0 4px ${DIM_COLORS[dim]}"></div>
+        </div>
+      </div>
+    `).join('')}
+  `;
+
+  // Insights
+  const insightsEl = document.getElementById('coach-insights');
+  insightsEl.innerHTML = `
+    ✨ <strong style="color:${DIM_COLORS[highest[0]]}">最も充実：${DIM_LABELS[highest[0]][0]}（${highest[1]}点）</strong><br>
+    ⚡ <strong style="color:${DIM_COLORS[lowest[0]]}">改善余地：${DIM_LABELS[lowest[0]][0]}（${lowest[1]}点）</strong><br><br>
+    <span style="opacity:0.7">下のチャットでJ.A.R.V.I.S.に具体的なアドバイスを求めてみましょう。</span>
+  `;
+
+  // Check API status
+  const apiOk = await checkApiStatus();
+
+  // Initial greeting from JARVIS via API
+  if (chatHistory.length === 0) {
+    const greetingEl = document.getElementById('coach-greeting');
+    if (apiOk) {
+      greetingEl.textContent = '';
+      chatHistory = [];
+      const initialMsg = `現在のLife Scoreデータを確認しました。総合${scores.total}点です。特に${DIM_LABELS[lowest[0]][0]}が${lowest[1]}点と改善の余地があります。今日のコンディションや気になっていることを教えてください。`;
+      await streamJarvisMessage(initialMsg, greetingEl);
+    } else {
+      greetingEl.innerHTML = `データを分析しました。<br><br>総合スコア <strong style="color:var(--neon)">${scores.total}点</strong><br>最低スコア: <strong style="color:${DIM_COLORS[lowest[0]]}">${DIM_LABELS[lowest[0]][0]}（${lowest[1]}点）</strong><br><br>APIキーを設定するとリアルタイムAIコーチングが利用できます。`;
+    }
+  }
+}
+
+async function streamJarvisMessage(userPrompt, targetEl) {
+  const db = getDB();
+  const scores = getLatestScores(db);
+
+  chatHistory.push({ role: 'user', content: userPrompt });
+
+  try {
+    const res = await fetch('/api/coach', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: chatHistory,
+        scores,
+        history: db.entries,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.message || 'API Error');
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    targetEl.textContent = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') break;
+        try {
+          const { text, error } = JSON.parse(data);
+          if (error) throw new Error(error);
+          if (text) {
+            fullText += text;
+            targetEl.innerHTML = fullText.replace(/\n/g, '<br>');
+            // auto-scroll
+            const chat = document.getElementById('coach-chat');
+            if (chat) chat.scrollTop = chat.scrollHeight;
+          }
+        } catch {}
+      }
+    }
+
+    chatHistory.push({ role: 'assistant', content: fullText });
+    return fullText;
+
+  } catch (err) {
+    const errMsg = `⚠️ エラー: ${err.message}`;
+    targetEl.innerHTML = `<span style="color:var(--neon-red)">${errMsg}</span>`;
+    chatHistory.pop(); // remove failed user message
+    throw err;
+  }
+}
+
+async function sendChat() {
+  if (isStreaming) return;
+
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('chat-send-btn');
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  const chat = document.getElementById('coach-chat');
+  input.value = '';
+  isStreaming = true;
+  sendBtn.disabled = true;
+  input.disabled = true;
+
+  // User bubble
+  const userDiv = document.createElement('div');
+  userDiv.className = 'chat-bubble user';
+  userDiv.innerHTML = `<div class="bubble-avatar">👤</div><div class="bubble-text">${escapeHtml(msg)}</div>`;
+  chat.appendChild(userDiv);
+  chat.scrollTop = chat.scrollHeight;
+
+  // Typing indicator
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'chat-bubble ai';
+  typingDiv.id = 'typing-indicator';
+  typingDiv.innerHTML = `
+    <div class="bubble-avatar">🤖</div>
+    <div class="typing-indicator">
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    </div>
+  `;
+  chat.appendChild(typingDiv);
+  chat.scrollTop = chat.scrollHeight;
+
+  // AI bubble (streaming target)
+  const aiDiv = document.createElement('div');
+  aiDiv.className = 'chat-bubble ai';
+  const aiTextEl = document.createElement('div');
+  aiTextEl.className = 'bubble-text';
+  aiDiv.innerHTML = '<div class="bubble-avatar">🤖</div>';
+  aiDiv.appendChild(aiTextEl);
+
+  try {
+    // replace typing with actual bubble
+    typingDiv.remove();
+    chat.appendChild(aiDiv);
+    await streamJarvisMessage(msg, aiTextEl);
+  } catch (err) {
+    typingDiv.remove();
+    chat.appendChild(aiDiv);
+    aiTextEl.innerHTML = `<span style="color:var(--neon-red)">⚠️ ${escapeHtml(err.message)}<br>サーバーが起動しているか確認してください。</span>`;
+  } finally {
+    isStreaming = false;
+    sendBtn.disabled = false;
+    input.disabled = false;
+    input.focus();
+    chat.scrollTop = chat.scrollHeight;
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════
+//  GOALS
+// ═══════════════════════════════════════════════════════
+
+function renderGoals() {
+  const db = getDB();
+  const scores = getLatestScores(db);
+  const list = document.getElementById('goals-list');
+
+  list.innerHTML = db.goals.map(g => {
+    const current = scores[g.dim] || g.current;
+    const pct = Math.min(100, Math.round((current / g.target) * 100));
+    const color = DIM_COLORS[g.dim];
+    return `
+      <div class="goal-item">
+        <div class="goal-badge" style="background:${color};box-shadow:0 0 6px ${color}"></div>
+        <div class="goal-info">
+          <div class="goal-name">${g.name}</div>
+          <div class="goal-detail" style="color:${color}">${DIM_LABELS[g.dim][0]} — 目標: ${g.target}点 / 現在: ${current}点</div>
+          <div class="goal-progress-bar">
+            <div class="goal-progress-fill" style="width:${pct}%;background:${color}"></div>
+          </div>
+        </div>
+        <div class="goal-pct" style="color:${color}">${pct}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showAddGoal() {
+  const f = document.getElementById('add-goal-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+function addGoal() {
+  const name = document.getElementById('goal-name-input').value.trim();
+  const dim = document.getElementById('goal-dim').value;
+  const target = parseInt(document.getElementById('goal-target').value) || 80;
+
+  if (!name) { showToast('⚠️ 目標名を入力してください'); return; }
+
+  const db = getDB();
+  db.goals.push({ id: Date.now(), name, dim, target, current: 50 });
+  saveDB(db);
+  document.getElementById('add-goal-form').style.display = 'none';
+  showToast('✅ 目標を追加しました');
+  renderGoals();
+}
+
+// ═══════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════
+
+function renderSettings() {
+  const db = getDB();
+  document.getElementById('settings-name').value = db.profile.name || '';
+}
+
+function saveSettings() {
+  const db = getDB();
+  db.profile.name = document.getElementById('settings-name').value;
+  saveDB(db);
+  showToast('✅ 設定を保存しました');
+}
+
+function exportData() {
+  const db = getDB();
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `jarvis-life-os-${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+}
+
+function clearData() {
+  localStorage.removeItem(DB_KEY);
+  showToast('🗑️ データを削除しました');
+  setTimeout(() => location.reload(), 800);
+}
+
+// ═══════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ═══════════════════════════════════════════════════════
+//  DASHBOARD INIT
+// ═══════════════════════════════════════════════════════
+
+function initDashboard() {
+  const db = getDB();
+  const scores = getLatestScores(db);
+
+  // last updated
+  const last = db.entries[db.entries.length-1];
+  document.getElementById('last-updated').textContent =
+    last ? `最終更新：${last.date}` : '最終更新：まだデータがありません';
+
+  // score delta
+  const deltaEl = document.getElementById('score-delta');
+  if (db.entries.length >= 2) {
+    const prev = db.entries[db.entries.length-2].total;
+    const diff = scores.total - prev;
+    deltaEl.textContent = diff >= 0 ? `↑ +${diff}` : `↓ ${diff}`;
+    deltaEl.className = diff >= 0 ? 'delta-up' : 'delta-down';
+  }
+
+  initScoreRing(scores.total);
+  initRadar(scores);
+  initTrend(currentTrendPeriod);
+  renderDimCards(scores);
+  renderAlerts(scores, db);
+  renderSuggestions(scores);
+}
+
+// ═══════════════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════════════
+
+(function boot() {
+  const db = getDB();
+  seedDemoData(db);
+  saveDB(db);
+
+  initDashboard();
+  renderInputForms();
+})();
+</script>
+</body>
+</html>

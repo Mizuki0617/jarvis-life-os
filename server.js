@@ -23,7 +23,18 @@ const app = express();
 const PORT = ENV.PORT || process.env.PORT || 3458;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+
+// 静的ファイル配信（Vercel対応: __dirname と process.cwd() 両方試みる）
+const staticDir = fs.existsSync(path.join(__dirname, 'index.html'))
+  ? __dirname
+  : process.cwd();
+app.use(express.static(staticDir));
+
+// ルートへの明示的なフォールバック
+app.get('/', (req, res) => {
+  const htmlPath = path.join(staticDir, 'index.html');
+  res.sendFile(htmlPath);
+});
 
 const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 

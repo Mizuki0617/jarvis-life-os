@@ -1725,10 +1725,13 @@ function updateClock() {
     `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} ${now.getHours()<12?'AM':'PM'}`;
 
   const h = now.getHours();
+  const db = getDB();
+  const name = db.profile?.name?.trim();
+  const nameStr = name ? `、${name}` : '';
   document.getElementById('greeting').textContent =
-    h < 12 ? 'おはようございます、あなたの現在の状況です' :
-    h < 17 ? 'こんにちは、あなたの現在の状況です' :
-             'こんばんは、あなたの現在の状況です';
+    h < 12 ? `おはようございます${nameStr}。あなたの現在の状況です` :
+    h < 17 ? `こんにちは${nameStr}。あなたの現在の状況です` :
+             `こんばんは${nameStr}。あなたの現在の状況です`;
 }
 
 setInterval(updateClock, 1000);
@@ -2675,8 +2678,9 @@ function renderSettings() {
 
 function saveSettings() {
   const db = getDB();
-  db.profile.name = document.getElementById('settings-name').value;
+  db.profile.name = document.getElementById('settings-name').value.trim();
   saveDB(db);
+  updateClock(); // 挨拶文を即時更新
   showToast('✅ 設定を保存しました');
 }
 

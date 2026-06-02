@@ -1009,6 +1009,17 @@
 
       <!-- ─── DASHBOARD ─── -->
       <div id="page-dashboard" class="page active">
+        <!-- データなし バナー -->
+        <div id="no-data-banner" style="display:none; margin-bottom:16px;">
+          <div style="background:rgba(79,195,247,0.06);border:1px solid rgba(79,195,247,0.25);border-radius:14px;padding:20px 24px;display:flex;align-items:center;gap:16px;">
+            <div style="font-size:28px;">📊</div>
+            <div style="flex:1;">
+              <div style="font-size:14px;font-weight:600;color:var(--neon);margin-bottom:4px;">まだデータがありません</div>
+              <div style="font-size:12px;color:var(--text-dim);">「入力する」から今日のライフデータを記録すると、スコアとグラフが表示されます。</div>
+            </div>
+            <button onclick="navigate('input')" style="font-family:'Rajdhani';font-size:11px;letter-spacing:2px;color:var(--neon);background:rgba(79,195,247,0.15);border:1px solid var(--neon);border-radius:8px;padding:8px 20px;cursor:pointer;white-space:nowrap;">入力する →</button>
+          </div>
+        </div>
         <div class="grid grid-3" style="margin-bottom:16px;">
 
           <!-- LIFE SCORE -->
@@ -1690,10 +1701,14 @@ function calcTotalScore(dimScores) {
 
 function getLatestScores(db) {
   if (!db.entries.length) return {
-    health:75, security:90, relationship:70, achievement:88, growth:87, total:82
+    health:0, security:0, relationship:0, achievement:0, growth:0, total:0
   };
   const last = db.entries[db.entries.length - 1];
   return { ...last.scores, total: last.total };
+}
+
+function hasData(db) {
+  return db.entries.length > 0;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2579,26 +2594,54 @@ function escapeHtml(str) {
 function renderGoals() {
   const db = getDB();
   const scores = getLatestScores(db);
+  const noData = !hasData(db);
   const list = document.getElementById('goals-list');
 
-  list.innerHTML = db.goals.map(g => {
-    const current = scores[g.dim] || g.current;
-    const pct = Math.min(100, Math.round((current / g.target) * 100));
+  if (db.goals.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:12px 0;">目標がまだありません。下のボタンから追加してください。</div>';
+    return;
+  }
+
+  list.innerHTML = db.goals.map((g, idx) => {
+    // 最新の入力データがあればそれを使い、なければ目標のcurrentフィールドを使う
+    const current = noData ? (g.current || 0) : (scores[g.dim] || g.current || 0);
+    const pct = g.target > 0 ? Math.min(100, Math.round((current / g.target) * 100)) : 0;
     const color = DIM_COLORS[g.dim];
+    const statusIcon = pct >= 100 ? '✅' : pct >= 70 ? '🔶' : '🔴';
+    const statusText = pct >= 100 ? '目標達成！' : pct >= 70 ? 'もう少し' : '要改善';
     return `
       <div class="goal-item">
         <div class="goal-badge" style="background:${color};box-shadow:0 0 6px ${color}"></div>
         <div class="goal-info">
-          <div class="goal-name">${g.name}</div>
-          <div class="goal-detail" style="color:${color}">${DIM_LABELS[g.dim][0]} — 目標: ${g.target}点 / 現在: ${current}点</div>
-          <div class="goal-progress-bar">
-            <div class="goal-progress-fill" style="width:${pct}%;background:${color}"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="goal-name">${g.name}</div>
+            <button onclick="deleteGoal(${idx})" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 4px;" title="削除">✕</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:3px;">
+            <div class="goal-detail" style="color:${color}">${DIM_LABELS[g.dim][0]} — 目標: <strong>${g.target}点</strong> / 現在: <strong>${current}点</strong></div>
+            <span style="font-size:10px;color:var(--text-dim);">${noData ? '（入力データなし）' : ''}</span>
+          </div>
+          <div class="goal-progress-bar" style="margin-top:8px;">
+            <div class="goal-progress-fill" style="width:${pct}%;background:${color};box-shadow:0 0 6px ${color}40;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:4px;">
+            <div style="font-size:9px;color:var(--text-dim);">${statusIcon} ${statusText}</div>
+            <div style="font-size:9px;color:var(--text-dim);">※「入力する」でデータを記録すると自動反映されます</div>
           </div>
         </div>
-        <div class="goal-pct" style="color:${color}">${pct}%</div>
+        <div class="goal-pct" style="color:${color};font-family:'Orbitron';font-size:16px;">${pct}%</div>
       </div>
     `;
   }).join('');
+}
+
+function deleteGoal(idx) {
+  if (!confirm('この目標を削除しますか？')) return;
+  const db = getDB();
+  db.goals.splice(idx, 1);
+  saveDB(db);
+  renderGoals();
+  showToast('🗑️ 目標を削除しました');
 }
 
 function showAddGoal() {
@@ -2647,8 +2690,11 @@ function exportData() {
 }
 
 function clearData() {
-  localStorage.removeItem(DB_KEY);
-  showToast('🗑️ データを削除しました');
+  // seeded:true にすることでリロード後にデモデータが再挿入されない
+  const fresh = defaultDB();
+  fresh.seeded = true;
+  saveDB(fresh);
+  showToast('🗑️ データをリセットしました');
   setTimeout(() => location.reload(), 800);
 }
 
@@ -2670,11 +2716,15 @@ function showToast(msg) {
 function initDashboard() {
   const db = getDB();
   const scores = getLatestScores(db);
+  const noData = !hasData(db);
+
+  // データなしバナー
+  document.getElementById('no-data-banner').style.display = noData ? 'block' : 'none';
 
   // last updated
   const last = db.entries[db.entries.length-1];
   document.getElementById('last-updated').textContent =
-    last ? `最終更新：${last.date}` : '最終更新：まだデータがありません';
+    last ? `最終更新：${last.date}` : '最終更新：データなし — 入力してください';
 
   // score delta
   const deltaEl = document.getElementById('score-delta');

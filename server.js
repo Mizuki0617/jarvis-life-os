@@ -28,7 +28,8 @@ app.use(express.json());
 const staticDir = fs.existsSync(path.join(__dirname, 'index.html'))
   ? __dirname
   : process.cwd();
-app.use(express.static(staticDir));
+// index: false → index.htmlはexpress.staticに直接配信させず、app.get('/')で注入して配信
+app.use(express.static(staticDir, { index: false }));
 
 const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 

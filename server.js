@@ -30,12 +30,6 @@ const staticDir = fs.existsSync(path.join(__dirname, 'index.html'))
   : process.cwd();
 app.use(express.static(staticDir));
 
-// ルートへの明示的なフォールバック
-app.get('/', (req, res) => {
-  const htmlPath = path.join(staticDir, 'index.html');
-  res.sendFile(htmlPath);
-});
-
 const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY });
 
 // System prompt for J.A.R.V.I.S. coach persona

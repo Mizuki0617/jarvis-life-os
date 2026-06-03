@@ -6,6 +6,7 @@
 <title>J.A.R.V.I.S. — Personal Life OS</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <style>
   :root {
     --bg: #05080f;
@@ -885,6 +886,40 @@
 </head>
 <body>
 
+<!-- ─── AUTH SCREEN ─── -->
+<div id="auth-screen" style="display:none; position:fixed; inset:0; z-index:9999; background:var(--bg); display:flex; align-items:center; justify-content:center;">
+  <div style="width:360px; background:var(--card-bg); border:1px solid var(--glass-border); border-radius:20px; padding:40px 32px; position:relative; overflow:hidden;">
+    <div style="position:absolute; top:0; left:15%; right:15%; height:1px; background:linear-gradient(90deg,transparent,rgba(79,195,247,0.4),transparent);"></div>
+    <!-- Logo -->
+    <div style="text-align:center; margin-bottom:32px;">
+      <div style="font-family:'Orbitron'; font-size:18px; font-weight:700; color:var(--neon); letter-spacing:3px; text-shadow:0 0 20px rgba(79,195,247,0.5);">J.A.R.V.I.S.</div>
+      <div style="font-family:'Rajdhani'; font-size:10px; letter-spacing:3px; color:var(--text-dim); margin-top:4px;">PERSONAL LIFE OS</div>
+    </div>
+    <!-- Tabs -->
+    <div style="display:flex; gap:0; margin-bottom:24px; background:rgba(79,195,247,0.05); border-radius:8px; padding:3px;">
+      <button id="auth-tab-login" onclick="switchAuthTab('login')" style="flex:1; padding:8px; font-family:'Rajdhani'; font-size:12px; letter-spacing:1px; border:none; border-radius:6px; cursor:pointer; transition:all 0.2s; background:rgba(79,195,247,0.15); color:var(--neon);">ログイン</button>
+      <button id="auth-tab-signup" onclick="switchAuthTab('signup')" style="flex:1; padding:8px; font-family:'Rajdhani'; font-size:12px; letter-spacing:1px; border:none; border-radius:6px; cursor:pointer; transition:all 0.2s; background:transparent; color:var(--text-dim);">新規登録</button>
+    </div>
+    <!-- Form -->
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div id="auth-name-wrap" style="display:none;">
+        <label style="font-size:10px; letter-spacing:1px; color:var(--text-dim); display:block; margin-bottom:4px;">名前</label>
+        <input id="auth-name" type="text" placeholder="あなたの名前" style="width:100%; background:rgba(79,195,247,0.06); border:1px solid var(--glass-border); border-radius:8px; padding:10px 14px; color:var(--text); font-size:13px; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--neon)'" onblur="this.style.borderColor=''">
+      </div>
+      <div>
+        <label style="font-size:10px; letter-spacing:1px; color:var(--text-dim); display:block; margin-bottom:4px;">メールアドレス</label>
+        <input id="auth-email" type="email" placeholder="email@example.com" style="width:100%; background:rgba(79,195,247,0.06); border:1px solid var(--glass-border); border-radius:8px; padding:10px 14px; color:var(--text); font-size:13px; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--neon)'" onblur="this.style.borderColor=''">
+      </div>
+      <div>
+        <label style="font-size:10px; letter-spacing:1px; color:var(--text-dim); display:block; margin-bottom:4px;">パスワード</label>
+        <input id="auth-password" type="password" placeholder="8文字以上" style="width:100%; background:rgba(79,195,247,0.06); border:1px solid var(--glass-border); border-radius:8px; padding:10px 14px; color:var(--text); font-size:13px; outline:none; transition:border-color 0.2s;" onfocus="this.style.borderColor='var(--neon)'" onblur="this.style.borderColor=''">
+      </div>
+      <div id="auth-error" style="display:none; color:var(--neon-red); font-size:11px; text-align:center; padding:6px; background:rgba(255,82,82,0.08); border-radius:6px; border:1px solid rgba(255,82,82,0.2);"></div>
+      <button id="auth-submit-btn" onclick="handleAuth()" style="margin-top:4px; padding:12px; background:linear-gradient(135deg,rgba(79,195,247,0.2),rgba(0,229,255,0.1)); border:1px solid var(--neon); border-radius:10px; color:var(--neon); font-family:'Rajdhani'; font-size:13px; font-weight:600; letter-spacing:2px; cursor:pointer; transition:all 0.2s;" onmouseover="this.style.boxShadow='0 0 16px rgba(79,195,247,0.3)'" onmouseout="this.style.boxShadow=''">ログイン</button>
+    </div>
+  </div>
+</div>
+
 <div id="app">
 
   <!-- ─── SIDEBAR ─── -->
@@ -1441,6 +1476,10 @@
             <div><div class="setting-label">全データを削除</div><div class="setting-sub">すべての記録を削除します（取消不可）</div></div>
             <button class="tab-btn" style="border-color:var(--neon-red);color:var(--neon-red);" onclick="if(confirm('本当に削除しますか？'))clearData()">削除</button>
           </div>
+          <div class="setting-row" id="settings-logout-row" style="display:none;">
+            <div><div class="setting-label">ログアウト</div><div class="setting-sub">アカウントからサインアウトします</div></div>
+            <button class="tab-btn" style="border-color:var(--neon-orange);color:var(--neon-orange);" onclick="signOut()">ログアウト</button>
+          </div>
         </div>
       </div>
 
@@ -1452,60 +1491,222 @@
 
 <script>
 // ═══════════════════════════════════════════════════════
-//  DATA LAYER
+//  SUPABASE CONFIG（server.jsが注入）
 // ═══════════════════════════════════════════════════════
 
+const SUPABASE_URL = '__SUPABASE_URL__';
+const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+const USE_SUPABASE = !!(SUPABASE_URL && SUPABASE_URL !== '__SUPABASE_URL__');
+
+let _supabase = null;
+if (USE_SUPABASE) {
+  _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+// ═══════════════════════════════════════════════════════
+//  IN-MEMORY STATE（全データをここで管理）
+// ═══════════════════════════════════════════════════════
+
+const STATE = {
+  user: null,
+  profile: { name: '' },
+  entries: [],
+  goals: []
+};
+
+// 既存コードとの互換レイヤー
 const DB_KEY = 'jarvis_life_os';
 
 function getDB() {
+  if (USE_SUPABASE) {
+    return {
+      profile: STATE.profile,
+      entries: [...STATE.entries],
+      goals: [...STATE.goals],
+    };
+  }
+  // LocalStorageフォールバック
   const raw = localStorage.getItem(DB_KEY);
-  if (!raw) return defaultDB();
-  try { return JSON.parse(raw); } catch { return defaultDB(); }
+  if (!raw) return _defaultDB();
+  try { return JSON.parse(raw); } catch { return _defaultDB(); }
 }
 
 function saveDB(db) {
-  localStorage.setItem(DB_KEY, JSON.stringify(db));
+  if (!USE_SUPABASE) {
+    localStorage.setItem(DB_KEY, JSON.stringify(db));
+  }
 }
 
-function defaultDB() {
-  return {
-    profile: { name: '' },
-    entries: [],
-    goals: [
-      { id: 1, name: '毎日7時間以上睡眠', dim: 'health', target: 90, current: 75 },
-      { id: 2, name: '緊急資金6ヶ月分確保', dim: 'security', target: 100, current: 90 },
-      { id: 3, name: '週2回以上の友人交流', dim: 'relationship', target: 85, current: 70 },
-      { id: 4, name: '月1件以上の表彰/感謝受領', dim: 'achievement', target: 95, current: 88 },
-      { id: 5, name: '毎日30分学習', dim: 'growth', target: 95, current: 87 },
-    ],
-    // seed demo data
-    seeded: false
-  };
+function _defaultDB() {
+  return { profile: { name: '' }, entries: [], goals: [], seeded: true };
 }
 
-function seedDemoData(db) {
-  if (db.seeded) return;
-  const weeks = ['W1','W2','W3','W4'];
-  const baseScores = [68, 72, 78, 82];
-  const dims = ['health','security','relationship','achievement','growth'];
-  const baseDims = [60,75,55,75,70];
-  const growDims = [75,90,70,88,87];
+// ═══════════════════════════════════════════════════════
+//  SUPABASE AUTH
+// ═══════════════════════════════════════════════════════
 
-  weeks.forEach((w, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (3-i)*7);
-    const entry = {
-      date: d.toISOString().split('T')[0],
-      label: w,
-      scores: {}
-    };
-    dims.forEach((dim, j) => {
-      entry.scores[dim] = Math.round(baseDims[j] + (growDims[j]-baseDims[j]) * (i/3));
-    });
-    entry.total = Math.round(Object.values(entry.scores).reduce((a,b)=>a+b,0)/5);
-    db.entries.push(entry);
-  });
-  db.seeded = true;
+let _authTab = 'login';
+
+function switchAuthTab(tab) {
+  _authTab = tab;
+  const nameWrap = document.getElementById('auth-name-wrap');
+  const btn = document.getElementById('auth-submit-btn');
+  const loginBtn = document.getElementById('auth-tab-login');
+  const signupBtn = document.getElementById('auth-tab-signup');
+  if (tab === 'signup') {
+    nameWrap.style.display = 'block';
+    btn.textContent = '新規登録';
+    loginBtn.style.background = 'transparent'; loginBtn.style.color = 'var(--text-dim)';
+    signupBtn.style.background = 'rgba(79,195,247,0.15)'; signupBtn.style.color = 'var(--neon)';
+  } else {
+    nameWrap.style.display = 'none';
+    btn.textContent = 'ログイン';
+    loginBtn.style.background = 'rgba(79,195,247,0.15)'; loginBtn.style.color = 'var(--neon)';
+    signupBtn.style.background = 'transparent'; signupBtn.style.color = 'var(--text-dim)';
+  }
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('auth-error');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const name = document.getElementById('auth-name').value.trim();
+  document.getElementById('auth-error').style.display = 'none';
+
+  if (!email || !password) { showAuthError('メールとパスワードを入力してください'); return; }
+
+  const btn = document.getElementById('auth-submit-btn');
+  btn.textContent = '処理中...'; btn.disabled = true;
+
+  try {
+    if (_authTab === 'signup') {
+      const { error } = await _supabase.auth.signUp({
+        email, password,
+        options: { data: { name } }
+      });
+      if (error) throw error;
+      showAuthError('✅ 確認メールを送信しました。メールを確認してください。');
+    } else {
+      const { error } = await _supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      // onAuthStateChangeが発火してbootが続く
+    }
+  } catch(e) {
+    showAuthError(e.message || 'エラーが発生しました');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = _authTab === 'signup' ? '新規登録' : 'ログイン';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  SUPABASE DATA OPS
+// ═══════════════════════════════════════════════════════
+
+async function loadUserData() {
+  if (!USE_SUPABASE || !STATE.user) return;
+
+  const uid = STATE.user.id;
+
+  // Profile
+  const { data: profile } = await _supabase
+    .from('profiles').select('*').eq('id', uid).single();
+  if (profile) STATE.profile = { name: profile.name || '' };
+
+  // Entries（新しい順に取得）
+  const { data: entries } = await _supabase
+    .from('daily_entries')
+    .select('*')
+    .eq('user_id', uid)
+    .order('date', { ascending: true });
+  STATE.entries = (entries || []).map(e => ({
+    date: e.date,
+    label: e.label || e.date.slice(5),
+    scores: e.scores || {},
+    total: e.total || 0,
+  }));
+
+  // Goals
+  const { data: goals } = await _supabase
+    .from('goals').select('*').eq('user_id', uid).order('created_at');
+  STATE.goals = (goals || []).map(g => ({
+    id: g.id,
+    name: g.name,
+    dim: g.dim,
+    target: g.target,
+    current: g.current_score || 0,
+  }));
+}
+
+async function dbSaveEntry(entryData) {
+  if (!USE_SUPABASE) return;
+  await _supabase.from('daily_entries').upsert({
+    user_id: STATE.user.id,
+    date: entryData.date,
+    scores: entryData.scores,
+    total: entryData.total,
+    label: entryData.label,
+  }, { onConflict: 'user_id,date' });
+  // STATEも更新
+  const idx = STATE.entries.findIndex(e => e.date === entryData.date);
+  if (idx >= 0) STATE.entries[idx] = entryData;
+  else STATE.entries.push(entryData);
+  STATE.entries.sort((a,b) => a.date.localeCompare(b.date));
+}
+
+async function dbSaveGoal(goalData) {
+  if (!USE_SUPABASE) return null;
+  const { data } = await _supabase.from('goals').insert({
+    user_id: STATE.user.id,
+    name: goalData.name,
+    dim: goalData.dim,
+    target: goalData.target,
+    current_score: goalData.current || 0,
+  }).select().single();
+  if (data) {
+    const g = { id: data.id, name: data.name, dim: data.dim, target: data.target, current: data.current_score };
+    STATE.goals.push(g);
+    return g;
+  }
+  return null;
+}
+
+async function dbDeleteGoal(goalId) {
+  if (!USE_SUPABASE) return;
+  await _supabase.from('goals').delete().eq('id', goalId).eq('user_id', STATE.user.id);
+  STATE.goals = STATE.goals.filter(g => g.id !== goalId);
+}
+
+async function dbUpdateProfile(name) {
+  if (!USE_SUPABASE) return;
+  STATE.profile.name = name;
+  await _supabase.from('profiles').update({ name, updated_at: new Date().toISOString() })
+    .eq('id', STATE.user.id);
+}
+
+async function dbClearAllData() {
+  if (!USE_SUPABASE) return;
+  const uid = STATE.user.id;
+  await Promise.all([
+    _supabase.from('daily_entries').delete().eq('user_id', uid),
+    _supabase.from('goals').delete().eq('user_id', uid),
+    _supabase.from('profiles').update({ name: '' }).eq('id', uid),
+  ]);
+  STATE.entries = [];
+  STATE.goals = [];
+  STATE.profile = { name: '' };
+}
+
+async function signOut() {
+  if (!USE_SUPABASE) return;
+  await _supabase.auth.signOut();
+  STATE.user = null; STATE.entries = []; STATE.goals = []; STATE.profile = { name: '' };
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('auth-screen').style.display = 'flex';
 }
 
 // Input form definitions
@@ -2163,7 +2364,7 @@ function selectOption(groupId, idx, score) {
   inputState[groupId] = { idx, score };
 }
 
-function saveInputData() {
+async function saveInputData() {
   const db = getDB();
   const today = new Date().toISOString().split('T')[0];
 
@@ -2193,13 +2394,17 @@ function saveInputData() {
   });
 
   const total = calcTotalScore(dimScores);
-  const existing = db.entries.findIndex(e => e.date === today);
   const entry = { date: today, label: today, scores: dimScores, total };
 
-  if (existing >= 0) db.entries[existing] = entry;
-  else db.entries.push(entry);
+  if (USE_SUPABASE) {
+    await dbSaveEntry(entry);
+  } else {
+    const existing = db.entries.findIndex(e => e.date === today);
+    if (existing >= 0) db.entries[existing] = entry;
+    else db.entries.push(entry);
+    saveDB(db);
+  }
 
-  saveDB(db);
   showToast('✅ データを保存しました');
   setTimeout(() => { navigate('dashboard'); initDashboard(); }, 800);
 }
@@ -2618,7 +2823,7 @@ function renderGoals() {
         <div class="goal-info">
           <div style="display:flex;align-items:center;justify-content:space-between;">
             <div class="goal-name">${g.name}</div>
-            <button onclick="deleteGoal(${idx})" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 4px;" title="削除">✕</button>
+            <button onclick="deleteGoal('${g.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:0 4px;" title="削除">✕</button>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:3px;">
             <div class="goal-detail" style="color:${color}">${DIM_LABELS[g.dim][0]} — 目標: <strong>${g.target}点</strong> / 現在: <strong>${current}点</strong></div>
@@ -2638,11 +2843,15 @@ function renderGoals() {
   }).join('');
 }
 
-function deleteGoal(idx) {
+async function deleteGoal(goalId) {
   if (!confirm('この目標を削除しますか？')) return;
-  const db = getDB();
-  db.goals.splice(idx, 1);
-  saveDB(db);
+  if (USE_SUPABASE) {
+    await dbDeleteGoal(goalId);
+  } else {
+    const db = getDB();
+    const idx = db.goals.findIndex(g => String(g.id) === String(goalId));
+    if (idx >= 0) { db.goals.splice(idx, 1); saveDB(db); }
+  }
   renderGoals();
   showToast('🗑️ 目標を削除しました');
 }
@@ -2652,17 +2861,21 @@ function showAddGoal() {
   f.style.display = f.style.display === 'none' ? 'block' : 'none';
 }
 
-function addGoal() {
+async function addGoal() {
   const name = document.getElementById('goal-name-input').value.trim();
   const dim = document.getElementById('goal-dim').value;
   const target = parseInt(document.getElementById('goal-target').value) || 80;
-
   if (!name) { showToast('⚠️ 目標名を入力してください'); return; }
 
-  const db = getDB();
-  db.goals.push({ id: Date.now(), name, dim, target, current: 50 });
-  saveDB(db);
+  if (USE_SUPABASE) {
+    await dbSaveGoal({ name, dim, target, current: 0 });
+  } else {
+    const db = getDB();
+    db.goals.push({ id: Date.now(), name, dim, target, current: 0 });
+    saveDB(db);
+  }
   document.getElementById('add-goal-form').style.display = 'none';
+  document.getElementById('goal-name-input').value = '';
   showToast('✅ 目標を追加しました');
   renderGoals();
 }
@@ -2674,13 +2887,21 @@ function addGoal() {
 function renderSettings() {
   const db = getDB();
   document.getElementById('settings-name').value = db.profile.name || '';
+  // ログアウトボタンを設定画面に追加（Supabaseモードのみ）
+  const logoutRow = document.getElementById('settings-logout-row');
+  if (logoutRow) logoutRow.style.display = USE_SUPABASE ? 'flex' : 'none';
 }
 
-function saveSettings() {
-  const db = getDB();
-  db.profile.name = document.getElementById('settings-name').value.trim();
-  saveDB(db);
-  updateClock(); // 挨拶文を即時更新
+async function saveSettings() {
+  const name = document.getElementById('settings-name').value.trim();
+  if (USE_SUPABASE) {
+    await dbUpdateProfile(name);
+  } else {
+    const db = getDB();
+    db.profile.name = name;
+    saveDB(db);
+  }
+  updateClock();
   showToast('✅ 設定を保存しました');
 }
 
@@ -2693,13 +2914,17 @@ function exportData() {
   a.click();
 }
 
-function clearData() {
-  // seeded:true にすることでリロード後にデモデータが再挿入されない
-  const fresh = defaultDB();
-  fresh.seeded = true;
-  saveDB(fresh);
-  showToast('🗑️ データをリセットしました');
-  setTimeout(() => location.reload(), 800);
+async function clearData() {
+  if (USE_SUPABASE) {
+    await dbClearAllData();
+    showToast('🗑️ データをリセットしました');
+    setTimeout(() => { initDashboard(); navigate('dashboard'); }, 800);
+  } else {
+    const fresh = _defaultDB();
+    saveDB(fresh);
+    showToast('🗑️ データをリセットしました');
+    setTimeout(() => location.reload(), 800);
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2751,13 +2976,44 @@ function initDashboard() {
 //  BOOT
 // ═══════════════════════════════════════════════════════
 
-(function boot() {
-  const db = getDB();
-  seedDemoData(db);
-  saveDB(db);
-
+function showApp() {
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
   initDashboard();
   renderInputForms();
+}
+
+function showAuthScreen() {
+  document.getElementById('auth-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+(async function boot() {
+  if (!USE_SUPABASE) {
+    // LocalStorageモード（Supabase未設定時）
+    showApp();
+    return;
+  }
+
+  // Auth状態を確認
+  _supabase.auth.onAuthStateChange(async (event, session) => {
+    if (session?.user) {
+      STATE.user = session.user;
+      await loadUserData();
+      showApp();
+    } else {
+      showAuthScreen();
+    }
+  });
+
+  const { data: { session } } = await _supabase.auth.getSession();
+  if (session?.user) {
+    STATE.user = session.user;
+    await loadUserData();
+    showApp();
+  } else {
+    showAuthScreen();
+  }
 })();
 </script>
 </body>

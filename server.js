@@ -130,6 +130,20 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// index.htmlにSupabase credentialsを注入して配信
+app.get('/', (req, res) => {
+  try {
+    let html = fs.readFileSync(path.join(staticDir, 'index.html'), 'utf8');
+    html = html
+      .replace('__SUPABASE_URL__', process.env.SUPABASE_URL || '')
+      .replace('__SUPABASE_ANON_KEY__', process.env.SUPABASE_ANON_KEY || '');
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (e) {
+    res.status(500).send('Error loading app: ' + e.message);
+  }
+});
+
 // ローカル起動（Vercelではmodule.exportsをエントリポイントとして使う）
 if (require.main === module) {
   app.listen(PORT, () => {
